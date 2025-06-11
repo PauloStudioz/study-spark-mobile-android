@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, BookOpen, Calculator, Brain, CheckSquare, Book } from 'lucide-react';
+import { Clock, BookOpen, Calculator, Brain, CheckSquare, Book, FileText } from 'lucide-react';
 import PomodoroTimer from '../components/PomodoroTimer';
 import MathSolver from '../components/MathSolver';
 import Dictionary from '../components/Dictionary';
 import Flashcards from '../components/Flashcards';
 import TodoList from '../components/TodoList';
+import QuizMaker from '../components/QuizMaker';
 import Navigation from '../components/Navigation';
 
 const Index = () => {
@@ -16,6 +17,8 @@ const Index = () => {
     switch (activeTab) {
       case 'timer':
         return <PomodoroTimer />;
+      case 'quiz':
+        return <QuizMaker />;
       case 'math':
         return <MathSolver />;
       case 'dictionary':

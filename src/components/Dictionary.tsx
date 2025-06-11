@@ -1,121 +1,72 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, BookOpen, Volume2, Star } from 'lucide-react';
+import { BookOpen, Search, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 
-interface DictionaryEntry {
-  word: string;
-  phonetic?: string;
-  meanings: Array<{
-    partOfSpeech: string;
-    definitions: Array<{
-      definition: string;
-      example?: string;
-      synonyms?: string[];
-    }>;
-  }>;
-}
-
-interface WordOfDay {
-  word: string;
+interface Definition {
   definition: string;
   example?: string;
 }
 
+interface Meaning {
+  partOfSpeech: string;
+  definitions: Definition[];
+  synonyms?: string[];
+  antonyms?: string[];
+}
+
+interface DictionaryEntry {
+  word: string;
+  phonetic?: string;
+  phonetics?: Array<{
+    text?: string;
+    audio?: string;
+  }>;
+  meanings: Meaning[];
+}
+
 const Dictionary = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResult, setSearchResult] = useState<DictionaryEntry | null>(null);
-  const [wordOfDay, setWordOfDay] = useState<WordOfDay | null>(null);
+  const [results, setResults] = useState<DictionaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchWordOfDay();
-  }, []);
-
-  const fetchWordOfDay = async () => {
-    try {
-      // Since we can't access external APIs directly, we'll use a static word of the day
-      const words = [
-        {
-          word: "Serendipity",
-          definition: "The occurrence and development of events by chance in a happy or beneficial way",
-          example: "A fortunate stroke of serendipity brought the two old friends together."
-        },
-        {
-          word: "Ephemeral", 
-          definition: "Lasting for a very short time",
-          example: "The beauty of cherry blossoms is ephemeral, lasting only a few weeks."
-        },
-        {
-          word: "Ubiquitous",
-          definition: "Present, appearing, or found everywhere",
-          example: "Smartphones have become ubiquitous in modern society."
-        }
-      ];
-      
-      const randomWord = words[Math.floor(Math.random() * words.length)];
-      setWordOfDay(randomWord);
-    } catch (err) {
-      console.error('Error fetching word of day:', err);
-    }
-  };
 
   const searchWord = async () => {
     if (!searchTerm.trim()) return;
 
     setLoading(true);
     setError('');
+    setResults([]);
 
     try {
-      // Mock dictionary data since we can't access external APIs directly
-      const mockData: DictionaryEntry = {
-        word: searchTerm.toLowerCase(),
-        phonetic: `/ˈsɜːrtʃ/`,
-        meanings: [
-          {
-            partOfSpeech: "verb",
-            definitions: [
-              {
-                definition: "Try to find something by looking or otherwise seeking carefully and thoroughly",
-                example: `She searched for her keys everywhere.`,
-                synonyms: ["seek", "look for", "hunt for", "explore"]
-              }
-            ]
-          },
-          {
-            partOfSpeech: "noun", 
-            definitions: [
-              {
-                definition: "An act of searching for someone or something",
-                example: `The search for the missing hiker continued through the night.`,
-                synonyms: ["quest", "hunt", "investigation"]
-              }
-            ]
-          }
-        ]
-      };
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${searchTerm.trim()}`);
+      
+      if (!response.ok) {
+        throw new Error('Word not found');
+      }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSearchResult(mockData);
+      const data = await response.json();
+      setResults(data);
     } catch (err) {
-      setError('Error fetching word definition. Please try again.');
-      console.error('Dictionary error:', err);
+      setError('Word not found or API error. Please try another word.');
+      console.error('Dictionary API error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const playPronunciation = (word: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.rate = 0.8;
-      speechSynthesis.speak(utterance);
+  const playAudio = (audioUrl: string) => {
+    const audio = new Audio(audioUrl);
+    audio.play().catch(err => console.error('Error playing audio:', err));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      searchWord();
     }
   };
 
@@ -126,168 +77,143 @@ const Dictionary = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-gradient-to-br from-green-50 to-teal-50 border-0 shadow-lg">
+        <Card className="bg-gradient-to-br from-green-50 to-blue-50 border-0 shadow-lg">
           <CardHeader className="text-center pb-4">
             <CardTitle className="flex items-center justify-center text-2xl text-green-700">
               <BookOpen className="mr-2" size={24} />
-              Dictionary & Word Explorer
+              Dictionary & Word Lookup
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex space-x-2">
+          <CardContent>
+            <div className="flex space-x-3">
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search for a word..."
-                className="text-lg h-12 rounded-xl border-2 focus:border-green-400"
-                onKeyPress={(e) => e.key === 'Enter' && searchWord()}
+                onKeyPress={handleKeyPress}
+                placeholder="Enter word to search..."
+                className="rounded-xl"
               />
               <Button
                 onClick={searchWord}
-                disabled={loading}
-                className="px-6 h-12 rounded-xl bg-green-600 hover:bg-green-700"
+                disabled={loading || !searchTerm.trim()}
+                className="bg-green-600 hover:bg-green-700 rounded-xl px-6"
               >
-                <Search size={20} />
+                {loading ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Search size={16} />
+                )}
               </Button>
             </div>
-
-            {error && (
-              <motion.p 
-                className="text-red-500 text-sm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                {error}
-              </motion.p>
-            )}
-
-            {loading && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Searching...</p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </motion.div>
 
-      {wordOfDay && (
+      {error && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          className="bg-red-50 border border-red-200 rounded-xl p-4"
         >
-          <Card className="shadow-lg border-2 border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center text-orange-700">
-                <Star className="mr-2 text-yellow-500" size={20} />
-                Word of the Day
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <h3 className="text-2xl font-bold text-orange-800 capitalize">
-                    {wordOfDay.word}
-                  </h3>
-                  <Button
-                    onClick={() => playPronunciation(wordOfDay.word)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-orange-600"
-                  >
-                    <Volume2 size={16} />
-                  </Button>
-                </div>
-                <p className="text-gray-700 leading-relaxed">{wordOfDay.definition}</p>
-                {wordOfDay.example && (
-                  <div className="bg-white/50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600 italic">"{wordOfDay.example}"</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <p className="text-red-700 text-center">{error}</p>
         </motion.div>
       )}
 
-      {searchResult && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Card className="shadow-lg">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <h3 className="text-2xl font-bold capitalize text-green-800">
-                    {searchResult.word}
-                  </h3>
-                  <Button
-                    onClick={() => playPronunciation(searchResult.word)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-green-600"
-                  >
-                    <Volume2 size={16} />
-                  </Button>
-                </div>
-                {searchResult.phonetic && (
-                  <span className="text-sm text-gray-500 font-mono">
-                    {searchResult.phonetic}
-                  </span>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {searchResult.meanings.map((meaning, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="border-l-4 border-green-300 pl-4"
-                >
-                  <Badge variant="secondary" className="mb-3 bg-green-100 text-green-800">
-                    {meaning.partOfSpeech}
-                  </Badge>
-                  
-                  {meaning.definitions.map((def, defIndex) => (
-                    <div key={defIndex} className="mb-4">
-                      <p className="text-gray-800 leading-relaxed mb-2">
-                        {defIndex + 1}. {def.definition}
-                      </p>
+      {results.length > 0 && (
+        <div className="space-y-4">
+          {results.map((entry, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Card className="shadow-lg">
+                <CardContent className="p-6">
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="text-2xl font-bold text-gray-800 capitalize">
+                        {entry.word}
+                      </h2>
+                      {entry.phonetics && entry.phonetics.some(p => p.audio) && (
+                        <Button
+                          onClick={() => {
+                            const audioPhonetic = entry.phonetics?.find(p => p.audio);
+                            if (audioPhonetic?.audio) {
+                              playAudio(audioPhonetic.audio);
+                            }
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl"
+                        >
+                          <Volume2 size={16} />
+                        </Button>
+                      )}
+                    </div>
+                    {entry.phonetic && (
+                      <p className="text-gray-600 italic">{entry.phonetic}</p>
+                    )}
+                  </div>
+
+                  {entry.meanings.map((meaning, meaningIndex) => (
+                    <div key={meaningIndex} className="mb-6">
+                      <Badge variant="secondary" className="mb-3">
+                        {meaning.partOfSpeech}
+                      </Badge>
                       
-                      {def.example && (
-                        <div className="bg-gray-50 p-3 rounded-lg mb-2">
-                          <p className="text-sm text-gray-600 italic">
-                            Example: "{def.example}"
-                          </p>
+                      <div className="space-y-3">
+                        {meaning.definitions.slice(0, 3).map((def, defIndex) => (
+                          <div key={defIndex} className="pl-4 border-l-2 border-green-200">
+                            <p className="text-gray-800 mb-1">{def.definition}</p>
+                            {def.example && (
+                              <p className="text-gray-600 italic text-sm">
+                                Example: "{def.example}"
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {meaning.synonyms && meaning.synonyms.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-sm font-medium text-gray-700 mb-2">Synonyms:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {meaning.synonyms.slice(0, 5).map((synonym, synIndex) => (
+                              <Badge key={synIndex} variant="outline" className="text-xs">
+                                {synonym}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       )}
-                      
-                      {def.synonyms && def.synonyms.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          <span className="text-sm text-gray-600 mr-2">Synonyms:</span>
-                          {def.synonyms.slice(0, 4).map((synonym, synIndex) => (
-                            <Badge 
-                              key={synIndex} 
-                              variant="outline"
-                              className="text-xs text-blue-600 border-blue-200"
-                            >
-                              {synonym}
-                            </Badge>
-                          ))}
+
+                      {meaning.antonyms && meaning.antonyms.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-sm font-medium text-gray-700 mb-2">Antonyms:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {meaning.antonyms.slice(0, 5).map((antonym, antIndex) => (
+                              <Badge key={antIndex} variant="outline" className="text-xs">
+                                {antonym}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
                   ))}
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !error && results.length === 0 && searchTerm && (
+        <div className="text-center py-12">
+          <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600">Search for a word to see its definition</p>
+        </div>
       )}
     </div>
   );
