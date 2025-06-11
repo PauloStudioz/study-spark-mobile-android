@@ -1,13 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Plus, FileText, Upload, Play, RotateCcw, CheckCircle, XCircle, Key } from 'lucide-react';
+import { FileText, Plus, Upload, Settings, Trash2, Play, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { generateQuizFromText } from '../utils/geminiApi';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { generateQuizFromText, generateFlashcardsFromText } from '@/utils/geminiApi';
 
 interface Question {
   id: string;
@@ -26,111 +28,100 @@ interface Quiz {
 
 const QuizMaker = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [quizTitle, setQuizTitle] = useState('');
-  const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [quizMode, setQuizMode] = useState(false);
-  const [geminiApiKey, setGeminiApiKey] = useState('');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [studyMode, setStudyMode] = useState(false);
+  const [showCreateQuiz, setShowCreateQuiz] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [newQuiz, setNewQuiz] = useState({
+    title: '',
+    text: ''
+  });
 
-  const generateQuizWithGemini = async (text: string, title: string) => {
-    if (!geminiApiKey.trim()) {
-      setShowApiKeyInput(true);
-      return;
-    }
+  useEffect(() => {
+    loadQuizzes();
+    loadApiKey();
+  }, []);
 
-    setGeneratingQuiz(true);
-    
-    try {
-      const newQuiz = await generateQuizFromText(text, title, geminiApiKey);
-      
-      const updatedQuizzes = [...quizzes, newQuiz];
-      setQuizzes(updatedQuizzes);
-      localStorage.setItem('studymate-quizzes', JSON.stringify(updatedQuizzes));
-      localStorage.setItem('gemini-api-key', geminiApiKey);
-      
-      setInputText('');
-      setQuizTitle('');
-      setShowApiKeyInput(false);
-    } catch (error) {
-      console.error('Error generating quiz:', error);
-      // Fallback to simple generation if API fails
-      await generateSimpleQuiz(text, title);
-    } finally {
-      setGeneratingQuiz(false);
+  const loadApiKey = () => {
+    const savedKey = localStorage.getItem('studymate-gemini-key');
+    if (savedKey) {
+      setApiKey(savedKey);
     }
   };
 
-  const generateSimpleQuiz = async (text: string, title: string) => {
-    // Fallback simple quiz generation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
-    const questions: Question[] = [];
-    
-    for (let i = 0; i < Math.min(5, sentences.length); i++) {
-      const sentence = sentences[i].trim();
-      if (sentence.length > 20) {
-        const words = sentence.split(' ').filter(w => w.length > 4);
-        if (words.length > 0) {
-          const keyWord = words[Math.floor(Math.random() * words.length)];
-          const questionText = sentence.replace(keyWord, '______');
-          
-          const options = [
-            keyWord,
-            generateRandomWord(),
-            generateRandomWord(),
-            generateRandomWord()
-          ].sort(() => Math.random() - 0.5);
-          
-          questions.push({
-            id: `q_${i}`,
-            question: `Fill in the blank: ${questionText}`,
-            options,
-            correctAnswer: options.indexOf(keyWord),
-            explanation: `The correct answer is "${keyWord}" based on the context.`
-          });
-        }
-      }
+  const saveApiKey = () => {
+    localStorage.setItem('studymate-gemini-key', apiKey);
+    setShowSettings(false);
+  };
+
+  const loadQuizzes = () => {
+    const savedQuizzes = localStorage.getItem('studymate-quizzes');
+    if (savedQuizzes) {
+      const parsed = JSON.parse(savedQuizzes);
+      // Convert date strings back to Date objects
+      const quizzesWithDates = parsed.map((quiz: any) => ({
+        ...quiz,
+        createdAt: quiz.createdAt ? new Date(quiz.createdAt) : new Date()
+      }));
+      setQuizzes(quizzesWithDates);
     }
-    
-    if (questions.length === 0) {
-      questions.push({
-        id: 'q_1',
-        question: 'Based on the provided text, what is the main topic?',
-        options: ['Education', 'Technology', 'Science', 'History'],
-        correctAnswer: 0,
-        explanation: 'This is inferred from the context of the text.'
-      });
-    }
-    
-    const newQuiz: Quiz = {
-      id: Date.now().toString(),
-      title: title || 'Generated Quiz',
-      questions,
-      createdAt: new Date()
-    };
-    
-    const updatedQuizzes = [...quizzes, newQuiz];
-    setQuizzes(updatedQuizzes);
+  };
+
+  const saveQuizzes = (updatedQuizzes: Quiz[]) => {
     localStorage.setItem('studymate-quizzes', JSON.stringify(updatedQuizzes));
   };
 
-  const generateRandomWord = () => {
-    const words = ['concept', 'theory', 'method', 'process', 'system', 'structure', 'element', 'factor', 'principle', 'approach'];
-    return words[Math.floor(Math.random() * words.length)];
+  const createQuizFromText = async () => {
+    if (!newQuiz.title.trim() || !newQuiz.text.trim()) {
+      alert('Please provide both title and text content');
+      return;
+    }
+
+    if (!apiKey.trim()) {
+      alert('Please set your Gemini API key in settings first');
+      setShowSettings(true);
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const generatedQuiz = await generateQuizFromText(newQuiz.text, newQuiz.title, apiKey);
+      
+      const updatedQuizzes = [...quizzes, generatedQuiz];
+      setQuizzes(updatedQuizzes);
+      saveQuizzes(updatedQuizzes);
+      
+      setNewQuiz({ title: '', text: '' });
+      setShowCreateQuiz(false);
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      alert('Failed to generate quiz. Please check your API key and try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const deleteQuiz = (quizId: string) => {
+    const updatedQuizzes = quizzes.filter(quiz => quiz.id !== quizId);
+    setQuizzes(updatedQuizzes);
+    saveQuizzes(updatedQuizzes);
+    if (currentQuiz?.id === quizId) {
+      setCurrentQuiz(null);
+      setStudyMode(false);
+    }
   };
 
   const startQuiz = (quiz: Quiz) => {
     setCurrentQuiz(quiz);
     setCurrentQuestionIndex(0);
-    setSelectedAnswers([]);
+    setSelectedAnswers(new Array(quiz.questions.length).fill(-1));
     setShowResults(false);
-    setQuizMode(true);
+    setStudyMode(true);
   };
 
   const selectAnswer = (answerIndex: number) => {
@@ -143,110 +134,141 @@ const QuizMaker = () => {
     if (currentQuiz && currentQuestionIndex < currentQuiz.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      setShowResults(true);
+      finishQuiz();
     }
   };
 
-  const restartQuiz = () => {
+  const prevQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const finishQuiz = () => {
+    setShowResults(true);
+  };
+
+  const resetQuiz = () => {
     setCurrentQuestionIndex(0);
-    setSelectedAnswers([]);
+    setSelectedAnswers(new Array(currentQuiz?.questions.length || 0).fill(-1));
     setShowResults(false);
   };
 
   const calculateScore = () => {
-    if (!currentQuiz) return 0;
-    const correct = selectedAnswers.reduce((score, answer, index) => {
-      return score + (answer === currentQuiz.questions[index].correctAnswer ? 1 : 0);
+    if (!currentQuiz) return { score: 0, total: 0, percentage: 0 };
+    
+    const correct = selectedAnswers.reduce((acc, answer, index) => {
+      return answer === currentQuiz.questions[index].correctAnswer ? acc + 1 : acc;
     }, 0);
-    return Math.round((correct / currentQuiz.questions.length) * 100);
+    
+    return {
+      score: correct,
+      total: currentQuiz.questions.length,
+      percentage: Math.round((correct / currentQuiz.questions.length) * 100)
+    };
   };
 
-  React.useEffect(() => {
-    const savedQuizzes = localStorage.getItem('studymate-quizzes');
-    if (savedQuizzes) {
-      setQuizzes(JSON.parse(savedQuizzes));
-    }
-    
-    const savedApiKey = localStorage.getItem('gemini-api-key');
-    if (savedApiKey) {
-      setGeminiApiKey(savedApiKey);
-    }
-  }, []);
-
-  if (quizMode && currentQuiz) {
+  if (studyMode && currentQuiz) {
     if (showResults) {
-      const score = calculateScore();
+      const { score, total, percentage } = calculateScore();
+      
       return (
         <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center"
-          >
-            <Card className="bg-gradient-to-br from-green-50 to-blue-50 border-0 shadow-xl">
-              <CardContent className="p-8">
-                <div className="mb-6">
-                  {score >= 70 ? (
-                    <CheckCircle size={64} className="mx-auto text-green-500 mb-4" />
-                  ) : (
-                    <XCircle size={64} className="mx-auto text-red-500 mb-4" />
-                  )}
-                  <h2 className="text-3xl font-bold mb-2">Quiz Complete!</h2>
-                  <p className="text-xl text-gray-600">Your Score: {score}%</p>
-                </div>
-                
-                <div className="space-y-4 mb-6">
-                  {currentQuiz.questions.map((question, index) => (
-                    <div key={question.id} className="text-left bg-white rounded-lg p-4">
-                      <p className="font-medium mb-2">Q{index + 1}: {question.question}</p>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded text-sm ${
-                          selectedAnswers[index] === question.correctAnswer 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          Your answer: {question.options[selectedAnswers[index]] || 'Not answered'}
-                        </span>
-                        {selectedAnswers[index] !== question.correctAnswer && (
-                          <span className="px-2 py-1 rounded text-sm bg-green-100 text-green-700">
-                            Correct: {question.options[question.correctAnswer]}
-                          </span>
-                        )}
+          <div className="text-center">
+            <Button
+              onClick={() => setStudyMode(false)}
+              variant="outline"
+              className="mb-4 rounded-xl"
+            >
+              Back to Quizzes
+            </Button>
+          </div>
+
+          <Card className="bg-gradient-to-br from-green-50 to-blue-50 border-0 shadow-lg">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-green-700">Quiz Complete!</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <div className="text-6xl font-bold text-green-600">{percentage}%</div>
+              <p className="text-lg text-gray-700">
+                You got {score} out of {total} questions correct
+              </p>
+              <Progress value={percentage} className="w-full h-4" />
+              
+              <div className="flex justify-center space-x-4 mt-6">
+                <Button
+                  onClick={resetQuiz}
+                  className="bg-blue-600 hover:bg-blue-700 rounded-xl"
+                >
+                  <RotateCcw size={16} className="mr-2" />
+                  Retake Quiz
+                </Button>
+                <Button
+                  onClick={() => setStudyMode(false)}
+                  variant="outline"
+                  className="rounded-xl"
+                >
+                  Back to Quizzes
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Review Answers:</h3>
+            {currentQuiz.questions.map((question, index) => {
+              const userAnswer = selectedAnswers[index];
+              const isCorrect = userAnswer === question.correctAnswer;
+              
+              return (
+                <Card key={question.id} className="border-l-4 border-l-gray-300">
+                  <CardContent className="p-4">
+                    <div className="flex items-start space-x-3">
+                      {isCorrect ? (
+                        <CheckCircle className="text-green-500 mt-1" size={20} />
+                      ) : (
+                        <XCircle className="text-red-500 mt-1" size={20} />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium mb-2">{question.question}</p>
+                        <div className="space-y-1 text-sm">
+                          <p className="text-gray-600">
+                            Your answer: <span className={isCorrect ? 'text-green-600' : 'text-red-600'}>
+                              {userAnswer >= 0 ? question.options[userAnswer] : 'Not answered'}
+                            </span>
+                          </p>
+                          {!isCorrect && (
+                            <p className="text-gray-600">
+                              Correct answer: <span className="text-green-600">
+                                {question.options[question.correctAnswer]}
+                              </span>
+                            </p>
+                          )}
+                          {question.explanation && (
+                            <p className="text-blue-600 mt-2">
+                              <strong>Explanation:</strong> {question.explanation}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                <div className="flex space-x-4 justify-center">
-                  <Button
-                    onClick={restartQuiz}
-                    className="bg-blue-600 hover:bg-blue-700 rounded-xl"
-                  >
-                    <RotateCcw size={16} className="mr-2" />
-                    Try Again
-                  </Button>
-                  <Button
-                    onClick={() => setQuizMode(false)}
-                    variant="outline"
-                    className="rounded-xl"
-                  >
-                    Back to Quizzes
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       );
     }
 
     const currentQuestion = currentQuiz.questions[currentQuestionIndex];
-    
+    const progress = ((currentQuestionIndex + 1) / currentQuiz.questions.length) * 100;
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <Button
-            onClick={() => setQuizMode(false)}
+            onClick={() => setStudyMode(false)}
             variant="outline"
             className="rounded-xl"
           >
@@ -257,52 +279,68 @@ const QuizMaker = () => {
           </Badge>
         </div>
 
+        <Progress value={progress} className="w-full h-2" />
+
         <motion.div
           key={currentQuestionIndex}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 border-0">
-            <CardContent className="p-8">
-              <h3 className="text-xl font-semibold mb-6 text-gray-800">
-                {currentQuestion.question}
-              </h3>
+          <Card className="shadow-lg">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">{currentQuestion.question}</h3>
               
               <div className="space-y-3">
                 {currentQuestion.options.map((option, index) => (
                   <motion.button
                     key={index}
                     onClick={() => selectAnswer(index)}
-                    className={`w-full p-4 rounded-xl text-left transition-all ${
+                    className={`w-full p-4 text-left rounded-xl border-2 transition-all ${
                       selectedAnswers[currentQuestionIndex] === index
-                        ? 'bg-purple-200 border-2 border-purple-400'
-                        : 'bg-white hover:bg-purple-50 border-2 border-gray-200'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
+                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center">
-                      <span className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-medium mr-4">
-                        {String.fromCharCode(65 + index)}
-                      </span>
-                      <span className="text-gray-800">{option}</span>
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                        selectedAnswers[currentQuestionIndex] === index
+                          ? 'border-blue-500 bg-blue-500'
+                          : 'border-gray-300'
+                      }`}>
+                        {selectedAnswers[currentQuestionIndex] === index && (
+                          <div className="w-3 h-3 bg-white rounded-full" />
+                        )}
+                      </div>
+                      <span>{option}</span>
                     </div>
                   </motion.button>
                 ))}
               </div>
-              
-              <div className="mt-8 text-center">
-                <Button
-                  onClick={nextQuestion}
-                  disabled={selectedAnswers[currentQuestionIndex] === undefined}
-                  className="bg-purple-600 hover:bg-purple-700 rounded-xl px-8"
-                >
-                  {currentQuestionIndex < currentQuiz.questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </motion.div>
+
+        <div className="flex justify-between">
+          <Button
+            onClick={prevQuestion}
+            disabled={currentQuestionIndex === 0}
+            variant="outline"
+            className="rounded-xl"
+          >
+            Previous
+          </Button>
+          
+          <Button
+            onClick={nextQuestion}
+            disabled={selectedAnswers[currentQuestionIndex] === -1}
+            className="bg-blue-600 hover:bg-blue-700 rounded-xl"
+          >
+            {currentQuestionIndex === currentQuiz.questions.length - 1 ? 'Finish' : 'Next'}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -314,120 +352,151 @@ const QuizMaker = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-0 shadow-lg">
+        <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-0 shadow-lg">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="flex items-center justify-center text-2xl text-purple-700">
-              <Brain className="mr-2" size={24} />
+            <CardTitle className="flex items-center justify-center text-2xl text-indigo-700">
+              <FileText className="mr-2" size={24} />
               AI Quiz Maker
             </CardTitle>
-            <p className="text-purple-600 mt-2">Generate quizzes from your study material using Gemini AI</p>
           </CardHeader>
-        </Card>
-      </motion.div>
-
-      {showApiKeyInput && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardContent className="p-6">
-            <div className="flex items-center mb-4">
-              <Key size={20} className="text-orange-600 mr-2" />
-              <h3 className="text-lg font-semibold text-orange-800">Gemini API Key Required</h3>
-            </div>
-            <p className="text-orange-700 mb-4 text-sm">
-              To use AI-powered quiz generation, please enter your Gemini API key. You can get one for free from Google AI Studio.
-            </p>
-            <div className="flex space-x-3">
-              <Input
-                type="password"
-                value={geminiApiKey}
-                onChange={(e) => setGeminiApiKey(e.target.value)}
-                placeholder="Enter your Gemini API key..."
-                className="rounded-xl"
-              />
+          <CardContent>
+            <div className="flex justify-center space-x-3">
               <Button
-                onClick={() => {
-                  if (geminiApiKey.trim()) {
-                    generateQuizWithGemini(inputText, quizTitle);
-                  }
-                }}
-                className="bg-orange-600 hover:bg-orange-700 rounded-xl"
+                onClick={() => setShowCreateQuiz(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 rounded-xl"
               >
-                Save & Generate
+                <Plus size={16} className="mr-2" />
+                Create Quiz
+              </Button>
+              <Button
+                onClick={() => setShowSettings(true)}
+                variant="outline"
+                className="rounded-xl"
+              >
+                <Settings size={16} className="mr-2" />
+                API Settings
               </Button>
             </div>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {!apiKey && (
+        <Alert>
+          <AlertDescription>
+            Please set your Gemini API key in settings to generate AI-powered quizzes.
+          </AlertDescription>
+        </Alert>
       )}
 
-      <Card className="shadow-lg">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Create Quiz from Text</h3>
+      {showSettings && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-6 shadow-lg border"
+        >
+          <h3 className="text-lg font-semibold mb-4">Gemini API Settings</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Gemini API Key
+              </label>
+              <Input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your Gemini API key..."
+                className="rounded-xl"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Get your API key from Google AI Studio: https://makersuite.google.com/app/apikey
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={saveApiKey}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 rounded-xl"
+              >
+                Save API Key
+              </Button>
+              <Button
+                onClick={() => setShowSettings(false)}
+                variant="outline"
+                className="rounded-xl"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {showCreateQuiz && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-6 shadow-lg border"
+        >
+          <h3 className="text-lg font-semibold mb-4">Create AI Quiz</h3>
           <div className="space-y-4">
             <Input
-              value={quizTitle}
-              onChange={(e) => setQuizTitle(e.target.value)}
-              placeholder="Quiz title (optional)..."
+              value={newQuiz.title}
+              onChange={(e) => setNewQuiz({...newQuiz, title: e.target.value})}
+              placeholder="Quiz title..."
               className="rounded-xl"
             />
+            
             <Textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Paste your lesson content, notes, or study material here. The AI will generate quiz questions based on this content..."
+              value={newQuiz.text}
+              onChange={(e) => setNewQuiz({...newQuiz, text: e.target.value})}
+              placeholder="Paste your lesson text here for AI quiz generation..."
               className="rounded-xl min-h-32"
               rows={6}
             />
-            <Button
-              onClick={() => generateQuizWithGemini(inputText, quizTitle)}
-              disabled={!inputText.trim() || generatingQuiz}
-              className="w-full bg-purple-600 hover:bg-purple-700 rounded-xl"
-            >
-              {generatingQuiz ? (
-                <>
-                  <motion.div
-                    className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  />
-                  Generating AI Quiz...
-                </>
-              ) : (
-                <>
-                  <Plus size={16} className="mr-2" />
-                  Generate AI Quiz
-                </>
-              )}
-            </Button>
+            
+            <div className="flex space-x-3">
+              <Button
+                onClick={createQuizFromText}
+                disabled={isGenerating}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 rounded-xl"
+              >
+                {isGenerating ? 'Generating...' : 'Generate Quiz'}
+              </Button>
+              <Button
+                onClick={() => setShowCreateQuiz(false)}
+                variant="outline"
+                className="rounded-xl"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </motion.div>
+      )}
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800">Your Quizzes</h3>
-        {quizzes.length === 0 ? (
-          <div className="text-center py-12">
-            <Brain size={48} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600 mb-4">No quizzes created yet</p>
-            <p className="text-sm text-gray-500">Add some study material above to generate your first quiz</p>
-          </div>
-        ) : (
-          quizzes.map((quiz, index) => (
-            <motion.div
-              key={quiz.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-xl font-semibold text-gray-800 mb-2">
-                        {quiz.title}
-                      </h4>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <span>{quiz.questions.length} questions</span>
-                        <span>Created {quiz.createdAt.toLocaleDateString()}</span>
-                      </div>
+        {quizzes.map((quiz, index) => (
+          <motion.div
+            key={quiz.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="shadow-lg hover:shadow-xl transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                      {quiz.title}
+                    </h3>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <span>{quiz.questions.length} questions</span>
+                      <span>
+                        Created: {quiz.createdAt instanceof Date ? quiz.createdAt.toLocaleDateString() : 'Date not available'}
+                      </span>
                     </div>
+                  </div>
+                  <div className="flex space-x-2">
                     <Button
                       onClick={() => startQuiz(quiz)}
                       className="bg-green-600 hover:bg-green-700 rounded-xl"
@@ -435,13 +504,34 @@ const QuizMaker = () => {
                       <Play size={16} className="mr-2" />
                       Start Quiz
                     </Button>
+                    <Button
+                      onClick={() => deleteQuiz(quiz.id)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 rounded-xl"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))
-        )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
+
+      {quizzes.length === 0 && (
+        <div className="text-center py-12">
+          <FileText size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600 mb-4">No quizzes yet</p>
+          <Button
+            onClick={() => setShowCreateQuiz(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 rounded-xl"
+          >
+            Create Your First Quiz
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

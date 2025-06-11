@@ -1,12 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Plus, RotateCcw, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Brain, Plus, RotateCcw, ChevronLeft, ChevronRight, Trash2, Settings, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { generateFlashcardsFromText } from '@/utils/geminiApi';
 
 interface Flashcard {
   id: string;
@@ -31,12 +32,30 @@ const Flashcards = () => {
   const [studyMode, setStudyMode] = useState(false);
   const [showCreateCard, setShowCreateCard] = useState(false);
   const [showCreateDeck, setShowCreateDeck] = useState(false);
+  const [showAIGenerate, setShowAIGenerate] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [apiKey, setApiKey] = useState('');
   const [newCard, setNewCard] = useState({ front: '', back: '' });
   const [newDeckName, setNewDeckName] = useState('');
+  const [aiText, setAiText] = useState('');
 
   useEffect(() => {
     loadDecks();
+    loadApiKey();
   }, []);
+
+  const loadApiKey = () => {
+    const savedKey = localStorage.getItem('studymate-gemini-key');
+    if (savedKey) {
+      setApiKey(savedKey);
+    }
+  };
+
+  const saveApiKey = () => {
+    localStorage.setItem('studymate-gemini-key', apiKey);
+    setShowSettings(false);
+  };
 
   const loadDecks = () => {
     const savedDecks = localStorage.getItem('studymate-decks');
@@ -82,6 +101,60 @@ const Flashcards = () => {
 
   const saveDecks = (updatedDecks: Deck[]) => {
     localStorage.setItem('studymate-decks', JSON.stringify(updatedDecks));
+  };
+
+  const generateAIFlashcards = async () => {
+    if (!aiText.trim()) {
+      alert('Please provide text content to generate flashcards');
+      return;
+    }
+
+    if (!apiKey.trim()) {
+      alert('Please set your Gemini API key in settings first');
+      setShowSettings(true);
+      return;
+    }
+
+    if (!currentDeck) {
+      alert('Please select a deck first');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const generatedCards = await generateFlashcardsFromText(aiText, apiKey);
+      
+      const newCards = generatedCards.map((card: any, index: number) => ({
+        id: `${Date.now()}_${index}`,
+        front: card.front,
+        back: card.back,
+        difficulty: 0,
+        nextReview: new Date(),
+        reviewCount: 0
+      }));
+
+      const updatedDeck = {
+        ...currentDeck,
+        cards: [...currentDeck.cards, ...newCards]
+      };
+
+      const updatedDecks = decks.map(deck => 
+        deck.id === currentDeck.id ? updatedDeck : deck
+      );
+
+      setDecks(updatedDecks);
+      setCurrentDeck(updatedDeck);
+      saveDecks(updatedDecks);
+      
+      setAiText('');
+      setShowAIGenerate(false);
+      alert(`Generated ${newCards.length} flashcards successfully!`);
+    } catch (error) {
+      console.error('Error generating flashcards:', error);
+      alert('Failed to generate flashcards. Please check your API key and try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const createDeck = () => {
@@ -339,7 +412,7 @@ const Flashcards = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-center space-x-3">
+            <div className="flex justify-center space-x-3 flex-wrap gap-2">
               <Button
                 onClick={() => setShowCreateDeck(true)}
                 className="bg-purple-600 hover:bg-purple-700 rounded-xl"
@@ -348,19 +421,122 @@ const Flashcards = () => {
                 New Deck
               </Button>
               {currentDeck && (
-                <Button
-                  onClick={() => setShowCreateCard(true)}
-                  variant="outline"
-                  className="rounded-xl"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Card
-                </Button>
+                <>
+                  <Button
+                    onClick={() => setShowCreateCard(true)}
+                    variant="outline"
+                    className="rounded-xl"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Card
+                  </Button>
+                  <Button
+                    onClick={() => setShowAIGenerate(true)}
+                    variant="outline"
+                    className="rounded-xl"
+                  >
+                    <Sparkles size={16} className="mr-2" />
+                    AI Generate
+                  </Button>
+                </>
               )}
+              <Button
+                onClick={() => setShowSettings(true)}
+                variant="outline"
+                className="rounded-xl"
+              >
+                <Settings size={16} className="mr-2" />
+                API Settings
+              </Button>
             </div>
           </CardContent>
         </Card>
       </motion.div>
+
+      {!apiKey && (
+        <Alert>
+          <AlertDescription>
+            Please set your Gemini API key in settings to generate AI-powered flashcards.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {showSettings && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-6 shadow-lg border"
+        >
+          <h3 className="text-lg font-semibold mb-4">Gemini API Settings</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Gemini API Key
+              </label>
+              <Input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your Gemini API key..."
+                className="rounded-xl"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Get your API key from Google AI Studio: https://makersuite.google.com/app/apikey
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={saveApiKey}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 rounded-xl"
+              >
+                Save API Key
+              </Button>
+              <Button
+                onClick={() => setShowSettings(false)}
+                variant="outline"
+                className="rounded-xl"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {showAIGenerate && currentDeck && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl p-6 shadow-lg border"
+        >
+          <h3 className="text-lg font-semibold mb-4">Generate AI Flashcards</h3>
+          <div className="space-y-4">
+            <Textarea
+              value={aiText}
+              onChange={(e) => setAiText(e.target.value)}
+              placeholder="Paste your study material here to generate flashcards..."
+              className="rounded-xl min-h-32"
+              rows={6}
+            />
+            <div className="flex space-x-3">
+              <Button
+                onClick={generateAIFlashcards}
+                disabled={isGenerating}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 rounded-xl"
+              >
+                {isGenerating ? 'Generating...' : 'Generate Flashcards'}
+              </Button>
+              <Button
+                onClick={() => setShowAIGenerate(false)}
+                variant="outline"
+                className="rounded-xl"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {showCreateDeck && (
         <motion.div
