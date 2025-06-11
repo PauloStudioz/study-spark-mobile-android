@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { evaluate, parse, simplify } from 'mathjs';
@@ -13,14 +12,29 @@ const MathSolver = () => {
   const [history, setHistory] = useState<Array<{expression: string, result: string}>>([]);
   const [error, setError] = useState('');
 
+  const normalizeExpression = (expr: string) => {
+    // Replace common mathematical symbols with mathjs compatible ones
+    return expr
+      .replace(/×/g, '*')      // Multiplication symbol
+      .replace(/÷/g, '/')      // Division symbol
+      .replace(/=/g, '')       // Remove equals signs
+      .replace(/!/g, '!')      // Factorial (mathjs supports this)
+      .replace(/%/g, '/100')   // Convert percentage to decimal
+      .trim();
+  };
+
   const solveExpression = () => {
     if (!expression.trim()) return;
 
     try {
       setError('');
-      const parsedExpression = parse(expression);
+      const normalizedExpression = normalizeExpression(expression);
+      console.log('Original expression:', expression);
+      console.log('Normalized expression:', normalizedExpression);
+      
+      const parsedExpression = parse(normalizedExpression);
       const simplified = simplify(parsedExpression);
-      const evaluated = evaluate(expression);
+      const evaluated = evaluate(normalizedExpression);
       
       const resultString = typeof evaluated === 'number' 
         ? evaluated.toString() 
@@ -65,6 +79,10 @@ const MathSolver = () => {
     { label: '(', value: '(' },
     { label: ')', value: ')' },
     { label: 'abs', value: 'abs(' },
+    { label: '×', value: '×' },
+    { label: '÷', value: '÷' },
+    { label: '%', value: '%' },
+    { label: '!', value: '!' },
   ];
 
   return (
@@ -80,13 +98,14 @@ const MathSolver = () => {
               <Calculator className="mr-2" size={24} />
               Advanced Math Solver
             </CardTitle>
+            <p className="text-purple-600 mt-2">Supports +, -, ×, ÷, %, !, ^, and more</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <Input
                 value={expression}
                 onChange={(e) => setExpression(e.target.value)}
-                placeholder="Enter mathematical expression..."
+                placeholder="Enter mathematical expression... (e.g., 2×3+5÷2)"
                 className="text-lg h-12 rounded-xl border-2 focus:border-purple-400"
                 onKeyPress={(e) => e.key === 'Enter' && solveExpression()}
               />

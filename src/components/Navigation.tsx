@@ -40,7 +40,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                 className={`p-1.5 rounded-xl ${isActive ? 'bg-blue-100' : ''}`}
                 animate={{
                   scale: isActive ? 1.1 : 1,
-                  backgroundColor: isActive ? '#dbeafe' : 'transparent'
+                  backgroundColor: isActive ? '#dbeafe' : '#ffffff'
                 }}
                 transition={{ duration: 0.2 }}
               >

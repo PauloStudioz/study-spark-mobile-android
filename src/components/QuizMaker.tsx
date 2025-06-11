@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Plus, FileText, Upload, Play, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
+import { Brain, Plus, FileText, Upload, Play, RotateCcw, CheckCircle, XCircle, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { generateQuizFromText } from '../utils/geminiApi';
 
 interface Question {
   id: string;
@@ -33,76 +34,90 @@ const QuizMaker = () => {
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [quizMode, setQuizMode] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
-  // Simple quiz generation function (you can replace this with an AI API call)
-  const generateQuizFromText = async (text: string, title: string) => {
+  const generateQuizWithGemini = async (text: string, title: string) => {
+    if (!geminiApiKey.trim()) {
+      setShowApiKeyInput(true);
+      return;
+    }
+
     setGeneratingQuiz(true);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
     try {
-      // This is a simple implementation. In a real app, you'd call an AI API like OpenAI
-      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
-      const questions: Question[] = [];
-      
-      // Generate simple questions from key sentences
-      for (let i = 0; i < Math.min(5, sentences.length); i++) {
-        const sentence = sentences[i].trim();
-        if (sentence.length > 20) {
-          // Extract a key word or phrase
-          const words = sentence.split(' ').filter(w => w.length > 4);
-          if (words.length > 0) {
-            const keyWord = words[Math.floor(Math.random() * words.length)];
-            const questionText = sentence.replace(keyWord, '______');
-            
-            const options = [
-              keyWord,
-              generateRandomWord(),
-              generateRandomWord(),
-              generateRandomWord()
-            ].sort(() => Math.random() - 0.5);
-            
-            questions.push({
-              id: `q_${i}`,
-              question: `Fill in the blank: ${questionText}`,
-              options,
-              correctAnswer: options.indexOf(keyWord),
-              explanation: `The correct answer is "${keyWord}" based on the context.`
-            });
-          }
-        }
-      }
-      
-      if (questions.length === 0) {
-        // Generate some sample questions if text parsing fails
-        questions.push({
-          id: 'q_1',
-          question: 'Based on the provided text, what is the main topic?',
-          options: ['Education', 'Technology', 'Science', 'History'],
-          correctAnswer: 0,
-          explanation: 'This is inferred from the context of the text.'
-        });
-      }
-      
-      const newQuiz: Quiz = {
-        id: Date.now().toString(),
-        title: title || 'Generated Quiz',
-        questions,
-        createdAt: new Date()
-      };
+      const newQuiz = await generateQuizFromText(text, title, geminiApiKey);
       
       const updatedQuizzes = [...quizzes, newQuiz];
       setQuizzes(updatedQuizzes);
       localStorage.setItem('studymate-quizzes', JSON.stringify(updatedQuizzes));
+      localStorage.setItem('gemini-api-key', geminiApiKey);
       
       setInputText('');
       setQuizTitle('');
+      setShowApiKeyInput(false);
     } catch (error) {
       console.error('Error generating quiz:', error);
+      // Fallback to simple generation if API fails
+      await generateSimpleQuiz(text, title);
     } finally {
       setGeneratingQuiz(false);
     }
+  };
+
+  const generateSimpleQuiz = async (text: string, title: string) => {
+    // Fallback simple quiz generation
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    const questions: Question[] = [];
+    
+    for (let i = 0; i < Math.min(5, sentences.length); i++) {
+      const sentence = sentences[i].trim();
+      if (sentence.length > 20) {
+        const words = sentence.split(' ').filter(w => w.length > 4);
+        if (words.length > 0) {
+          const keyWord = words[Math.floor(Math.random() * words.length)];
+          const questionText = sentence.replace(keyWord, '______');
+          
+          const options = [
+            keyWord,
+            generateRandomWord(),
+            generateRandomWord(),
+            generateRandomWord()
+          ].sort(() => Math.random() - 0.5);
+          
+          questions.push({
+            id: `q_${i}`,
+            question: `Fill in the blank: ${questionText}`,
+            options,
+            correctAnswer: options.indexOf(keyWord),
+            explanation: `The correct answer is "${keyWord}" based on the context.`
+          });
+        }
+      }
+    }
+    
+    if (questions.length === 0) {
+      questions.push({
+        id: 'q_1',
+        question: 'Based on the provided text, what is the main topic?',
+        options: ['Education', 'Technology', 'Science', 'History'],
+        correctAnswer: 0,
+        explanation: 'This is inferred from the context of the text.'
+      });
+    }
+    
+    const newQuiz: Quiz = {
+      id: Date.now().toString(),
+      title: title || 'Generated Quiz',
+      questions,
+      createdAt: new Date()
+    };
+    
+    const updatedQuizzes = [...quizzes, newQuiz];
+    setQuizzes(updatedQuizzes);
+    localStorage.setItem('studymate-quizzes', JSON.stringify(updatedQuizzes));
   };
 
   const generateRandomWord = () => {
@@ -150,6 +165,11 @@ const QuizMaker = () => {
     const savedQuizzes = localStorage.getItem('studymate-quizzes');
     if (savedQuizzes) {
       setQuizzes(JSON.parse(savedQuizzes));
+    }
+    
+    const savedApiKey = localStorage.getItem('gemini-api-key');
+    if (savedApiKey) {
+      setGeminiApiKey(savedApiKey);
     }
   }, []);
 
@@ -300,10 +320,43 @@ const QuizMaker = () => {
               <Brain className="mr-2" size={24} />
               AI Quiz Maker
             </CardTitle>
-            <p className="text-purple-600 mt-2">Generate quizzes from your study material</p>
+            <p className="text-purple-600 mt-2">Generate quizzes from your study material using Gemini AI</p>
           </CardHeader>
         </Card>
       </motion.div>
+
+      {showApiKeyInput && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-6">
+            <div className="flex items-center mb-4">
+              <Key size={20} className="text-orange-600 mr-2" />
+              <h3 className="text-lg font-semibold text-orange-800">Gemini API Key Required</h3>
+            </div>
+            <p className="text-orange-700 mb-4 text-sm">
+              To use AI-powered quiz generation, please enter your Gemini API key. You can get one for free from Google AI Studio.
+            </p>
+            <div className="flex space-x-3">
+              <Input
+                type="password"
+                value={geminiApiKey}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
+                placeholder="Enter your Gemini API key..."
+                className="rounded-xl"
+              />
+              <Button
+                onClick={() => {
+                  if (geminiApiKey.trim()) {
+                    generateQuizWithGemini(inputText, quizTitle);
+                  }
+                }}
+                className="bg-orange-600 hover:bg-orange-700 rounded-xl"
+              >
+                Save & Generate
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-lg">
         <CardContent className="p-6">
@@ -323,7 +376,7 @@ const QuizMaker = () => {
               rows={6}
             />
             <Button
-              onClick={() => generateQuizFromText(inputText, quizTitle)}
+              onClick={() => generateQuizWithGemini(inputText, quizTitle)}
               disabled={!inputText.trim() || generatingQuiz}
               className="w-full bg-purple-600 hover:bg-purple-700 rounded-xl"
             >
@@ -334,12 +387,12 @@ const QuizMaker = () => {
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   />
-                  Generating Quiz...
+                  Generating AI Quiz...
                 </>
               ) : (
                 <>
                   <Plus size={16} className="mr-2" />
-                  Generate Quiz
+                  Generate AI Quiz
                 </>
               )}
             </Button>
