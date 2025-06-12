@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import PomodoroTimer from '../components/PomodoroTimer';
-import MathSolver from '../components/MathSolver';
+import ImmersivePomodoroTimer from '../components/ImmersivePomodoroTimer';
+import AdvancedMathSolver from '../components/AdvancedMathSolver';
 import Dictionary from '../components/Dictionary';
 import Flashcards from '../components/Flashcards';
 import TodoList from '../components/TodoList';
@@ -21,11 +21,11 @@ const AppContent = () => {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'timer':
-        return <PomodoroTimer />;
+        return <ImmersivePomodoroTimer />;
       case 'quiz':
         return <QuizMaker />;
       case 'math':
-        return <MathSolver />;
+        return <AdvancedMathSolver />;
       case 'dictionary':
         return <Dictionary />;
       case 'flashcards':
@@ -33,7 +33,7 @@ const AppContent = () => {
       case 'todo':
         return <TodoList />;
       default:
-        return <PomodoroTimer />;
+        return <ImmersivePomodoroTimer />;
     }
   };
 
@@ -47,9 +47,9 @@ const AppContent = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            StudyMate
+            StudyMate Pro
           </motion.h1>
-          <p className="text-center text-white/80 mt-1">Your Ultimate Study Companion</p>
+          <p className="text-center text-white/80 mt-1">Enhanced Study Companion</p>
           
           <Button
             onClick={() => setShowSettings(true)}
