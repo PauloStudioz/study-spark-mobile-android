@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Search, Volume2, Loader2, Globe } from 'lucide-react';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/contexts/ThemeContext';
-import { searchTagalogWord } from '@/utils/tagalogApi';
+import { searchTagalogWord } from '@/utils/wiktionaryApi';
 
 interface Definition {
   definition: string;

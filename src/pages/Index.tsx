@@ -69,7 +69,7 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className="p-4 pb-20">
+        <main className="p-4 pb-32">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, x: 20 }}
