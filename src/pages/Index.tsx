@@ -9,8 +9,11 @@ import Dictionary from '../components/Dictionary';
 import Flashcards from '../components/Flashcards';
 import TodoList from '../components/TodoList';
 import QuizMaker from '../components/QuizMaker';
+import StudyAnalytics from '../components/StudyAnalytics';
 import Navigation from '../components/Navigation';
 import Settings from '../components/Settings';
+import NotificationCenter from '../components/NotificationCenter';
+import PWAInstaller from '../components/PWAInstaller';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 
 const AppContent = () => {
@@ -32,6 +35,8 @@ const AppContent = () => {
         return <Flashcards />;
       case 'todo':
         return <TodoList />;
+      case 'analytics':
+        return <StudyAnalytics />;
       default:
         return <ImmersivePomodoroTimer />;
     }
@@ -51,14 +56,17 @@ const AppContent = () => {
           </motion.h1>
           <p className="text-center text-white/80 mt-1">Enhanced Study Companion</p>
           
-          <Button
-            onClick={() => setShowSettings(true)}
-            variant="ghost"
-            size="sm"
-            className="absolute top-4 right-4 text-white hover:bg-white/20 rounded-full p-2"
-          >
-            <SettingsIcon size={20} />
-          </Button>
+          <div className="absolute top-4 right-4 flex space-x-2">
+            <NotificationCenter />
+            <Button
+              onClick={() => setShowSettings(true)}
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 rounded-full p-2"
+            >
+              <SettingsIcon size={20} />
+            </Button>
+          </div>
         </header>
 
         <main className="p-4 pb-20">
@@ -75,6 +83,7 @@ const AppContent = () => {
 
         <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
         <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />
+        <PWAInstaller />
       </div>
     </div>
   );

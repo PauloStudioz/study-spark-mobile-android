@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Calculator, BookOpen, Brain, CheckSquare, FileText } from 'lucide-react';
+import { Timer, Calculator, BookOpen, Brain, CheckSquare, HelpCircle, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface NavigationProps {
   activeTab: string;
@@ -9,45 +11,48 @@ interface NavigationProps {
 }
 
 const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
-  const tabs = [
-    { id: 'timer', icon: Clock, label: 'Timer' },
-    { id: 'quiz', icon: FileText, label: 'Quiz' },
-    { id: 'flashcards', icon: Brain, label: 'Cards' },
+  const { currentTheme } = useTheme();
+
+  const navItems = [
+    { id: 'timer', icon: Timer, label: 'Timer' },
+    { id: 'quiz', icon: HelpCircle, label: 'Quiz' },
     { id: 'math', icon: Calculator, label: 'Math' },
-    { id: 'dictionary', icon: BookOpen, label: 'Dict' },
-    { id: 'todo', icon: CheckSquare, label: 'Tasks' },
+    { id: 'dictionary', icon: BookOpen, label: 'Dictionary' },
+    { id: 'flashcards', icon: Brain, label: 'Cards' },
+    { id: 'todo', icon: CheckSquare, label: 'Todo' },
+    { id: 'analytics', icon: BarChart3, label: 'Stats' },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 px-2 py-2 rounded-t-3xl shadow-lg">
-      <div className="flex justify-around">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+    <nav className={`fixed bottom-0 left-0 right-0 bg-gradient-to-r ${currentTheme.headerGradient} p-2 shadow-lg rounded-t-3xl max-w-md mx-auto`}>
+      <div className="flex justify-around items-center">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
           
           return (
-            <motion.button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center p-1 rounded-xl transition-colors ${
-                isActive 
-                  ? 'text-blue-600' 
-                  : 'text-gray-400 hover:text-gray-600'
+            <Button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              variant="ghost"
+              size="sm"
+              className={`flex flex-col items-center space-y-1 p-2 min-w-0 relative ${
+                isActive ? 'text-white' : 'text-white/70 hover:text-white'
               }`}
-              whileTap={{ scale: 0.95 }}
             >
-              <motion.div
-                className={`p-1.5 rounded-xl ${isActive ? 'bg-blue-100' : ''}`}
-                animate={{
-                  scale: isActive ? 1.1 : 1,
-                  backgroundColor: isActive ? '#dbeafe' : '#ffffff'
-                }}
-                transition={{ duration: 0.2 }}
-              >
-                <Icon size={18} />
-              </motion.div>
-              <span className="text-xs mt-1 font-medium">{tab.label}</span>
-            </motion.button>
+              {isActive && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-white/20 rounded-lg"
+                  initial={false}
+                  transition={{ duration: 0.2 }}
+                />
+              )}
+              <Icon size={18} className="relative z-10" />
+              <span className="text-xs font-medium relative z-10 truncate">
+                {item.label}
+              </span>
+            </Button>
           );
         })}
       </div>

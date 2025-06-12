@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, Settings as SettingsIcon, Maximize, X, Volume2, VolumeX } from 'lucide-react';
@@ -73,8 +74,6 @@ const ImmersivePomodoroTimer = () => {
   useEffect(() => {
     // Handle ambient sound
     if (ambientSound !== 'none' && isSoundEnabled) {
-      // In a real app, you'd load actual audio files
-      // For demo, we'll just create a placeholder
       console.log(`Playing ambient sound: ${ambientSound} at volume ${soundVolume[0]}`);
     }
   }, [ambientSound, soundVolume, isSoundEnabled]);
@@ -216,7 +215,7 @@ const ImmersivePomodoroTimer = () => {
             >
               <RotateCcw size={24} />
             </Button>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     );
