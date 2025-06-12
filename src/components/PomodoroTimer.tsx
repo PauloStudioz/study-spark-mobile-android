@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, Settings } from 'lucide-react';
+import { Play, Pause, RotateCcw, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const PomodoroTimer = () => {
+  const { currentTheme } = useTheme();
   const [time, setTime] = useState(25 * 60); // 25 minutes in seconds
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<'focus' | 'break'>('focus');
@@ -19,7 +21,6 @@ const PomodoroTimer = () => {
   const [sessions, setSessions] = useState(0);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const initialTime = mode === 'focus' 
     ? settings.focusTime * 60 
@@ -100,6 +101,15 @@ const PomodoroTimer = () => {
     setShowSettings(false);
   };
 
+  const handleInputChange = (field: keyof typeof settings, value: string) => {
+    // Allow empty string for editing, otherwise parse to number
+    const numValue = value === '' ? 1 : Math.max(1, Math.min(99, parseInt(value) || 1));
+    setSettings({
+      ...settings,
+      [field]: numValue
+    });
+  };
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -107,11 +117,11 @@ const PomodoroTimer = () => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 border-0 shadow-lg">
+        <Card className={`bg-gradient-to-br ${currentTheme.cardGradient} border-0 shadow-lg`}>
           <CardContent className="p-8 text-center">
             <div className="relative mb-6">
               <motion.div
-                className="w-48 h-48 mx-auto rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-2xl"
+                className={`w-48 h-48 mx-auto rounded-full bg-gradient-to-br ${currentTheme.headerGradient} flex items-center justify-center shadow-2xl`}
                 animate={{
                   scale: isActive ? [1, 1.02, 1] : 1,
                 }}
@@ -137,10 +147,7 @@ const PomodoroTimer = () => {
             </div>
 
             <motion.h2 
-              className="text-2xl font-bold mb-2"
-              animate={{ 
-                color: mode === 'focus' ? '#3b82f6' : '#10b981' 
-              }}
+              className={`text-2xl font-bold mb-2 text-${currentTheme.textColor}`}
             >
               {mode === 'focus' ? 'Focus Time' : 'Break Time'}
             </motion.h2>
@@ -178,7 +185,7 @@ const PomodoroTimer = () => {
                 size="lg"
                 className="rounded-full px-6"
               >
-                <Settings size={20} />
+                <SettingsIcon size={20} />
               </Button>
             </div>
           </CardContent>
@@ -189,53 +196,80 @@ const PomodoroTimer = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl p-6 shadow-lg border"
+          className={`bg-gradient-to-br ${currentTheme.cardGradient} rounded-2xl p-6 shadow-lg border-0`}
         >
-          <h3 className="text-lg font-semibold mb-4">Timer Settings</h3>
+          <h3 className={`text-lg font-semibold mb-4 text-${currentTheme.textColor}`}>Timer Settings</h3>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Focus Time (minutes)</label>
-              <input
-                type="number"
-                value={settings.focusTime}
-                onChange={(e) => setSettings({...settings, focusTime: parseInt(e.target.value) || 25})}
-                className="w-full p-2 border rounded-lg"
-                min="1"
-                max="60"
-              />
+              <label className="block text-sm font-medium mb-3 text-gray-700">Focus Time (minutes)</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={settings.focusTime}
+                  onChange={(e) => handleInputChange('focusTime', e.target.value)}
+                  className="w-full p-4 border-2 border-gray-200 rounded-xl text-center text-lg font-semibold focus:border-blue-500 focus:outline-none transition-colors"
+                  min="1"
+                  max="99"
+                  placeholder="25"
+                />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                  min
+                </div>
+              </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Short Break (minutes)</label>
-              <input
-                type="number"
-                value={settings.shortBreak}
-                onChange={(e) => setSettings({...settings, shortBreak: parseInt(e.target.value) || 5})}
-                className="w-full p-2 border rounded-lg"
-                min="1"
-                max="30"
-              />
+              <label className="block text-sm font-medium mb-3 text-gray-700">Short Break (minutes)</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={settings.shortBreak}
+                  onChange={(e) => handleInputChange('shortBreak', e.target.value)}
+                  className="w-full p-4 border-2 border-gray-200 rounded-xl text-center text-lg font-semibold focus:border-blue-500 focus:outline-none transition-colors"
+                  min="1"
+                  max="30"
+                  placeholder="5"
+                />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                  min
+                </div>
+              </div>
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Long Break (minutes)</label>
-              <input
-                type="number"
-                value={settings.longBreak}
-                onChange={(e) => setSettings({...settings, longBreak: parseInt(e.target.value) || 15})}
-                className="w-full p-2 border rounded-lg"
-                min="1"
-                max="60"
-              />
+              <label className="block text-sm font-medium mb-3 text-gray-700">Long Break (minutes)</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={settings.longBreak}
+                  onChange={(e) => handleInputChange('longBreak', e.target.value)}
+                  className="w-full p-4 border-2 border-gray-200 rounded-xl text-center text-lg font-semibold focus:border-blue-500 focus:outline-none transition-colors"
+                  min="1"
+                  max="60"
+                  placeholder="15"
+                />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                  min
+                </div>
+              </div>
             </div>
             
-            <Button
-              onClick={() => updateSettings(settings)}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              Save Settings
-            </Button>
+            <div className="flex space-x-3 pt-4">
+              <Button
+                onClick={() => updateSettings(settings)}
+                className={`flex-1 bg-gradient-to-r ${currentTheme.headerGradient} hover:opacity-90 rounded-xl py-3`}
+              >
+                Save Settings
+              </Button>
+              <Button
+                onClick={() => setShowSettings(false)}
+                variant="outline"
+                className="px-6 rounded-xl"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </motion.div>
       )}
