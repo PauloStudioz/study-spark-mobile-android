@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ImmersivePomodoroTimer from '../components/ImmersivePomodoroTimer';
+import PomodoroTimer from '../components/PomodoroTimer';
 import AdvancedMathSolver from '../components/AdvancedMathSolver';
 import Dictionary from '../components/Dictionary';
 import Flashcards from '../components/Flashcards';
 import TodoList from '../components/TodoList';
 import QuizMaker from '../components/QuizMaker';
+import StudyAnalytics from '../components/StudyAnalytics';
 import Navigation from '../components/Navigation';
 import Settings from '../components/Settings';
 import NotificationCenter from '../components/NotificationCenter';
@@ -23,7 +24,7 @@ const AppContent = () => {
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'timer':
-        return <ImmersivePomodoroTimer />;
+        return <PomodoroTimer />;
       case 'quiz':
         return <QuizMaker />;
       case 'math':
@@ -34,8 +35,10 @@ const AppContent = () => {
         return <Flashcards />;
       case 'todo':
         return <TodoList />;
+      case 'analytics':
+        return <StudyAnalytics />;
       default:
-        return <ImmersivePomodoroTimer />;
+        return <PomodoroTimer />;
     }
   };
 
@@ -66,7 +69,7 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className="p-4 pb-24">
+        <main className="p-4 pb-28">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, x: 20 }}

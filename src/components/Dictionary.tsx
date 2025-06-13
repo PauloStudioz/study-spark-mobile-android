@@ -1,13 +1,12 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Search, Volume2, Loader2, Globe } from 'lucide-react';
+import { BookOpen, Search, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from '@/contexts/ThemeContext';
-import { searchTagalogWord } from '@/utils/wiktionaryApi';
 
 interface Definition {
   definition: string;
@@ -31,33 +30,12 @@ interface DictionaryEntry {
   meanings: Meaning[];
 }
 
-interface TagalogEntry {
-  word: string;
-  definition: string;
-  type?: string;
-  example?: string;
-  pronunciation?: string;
-  etymology?: string;
-}
-
 const Dictionary = () => {
   const { currentTheme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<DictionaryEntry[]>([]);
-  const [tagalogResults, setTagalogResults] = useState<TagalogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [language, setLanguage] = useState('english');
-
-  const searchEnglishWord = async (word: string) => {
-    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.trim()}`);
-    
-    if (!response.ok) {
-      throw new Error('Word not found');
-    }
-
-    return await response.json();
-  };
 
   const searchWord = async () => {
     if (!searchTerm.trim()) return;
@@ -65,18 +43,18 @@ const Dictionary = () => {
     setLoading(true);
     setError('');
     setResults([]);
-    setTagalogResults([]);
 
     try {
-      if (language === 'english') {
-        const data = await searchEnglishWord(searchTerm);
-        setResults(data);
-      } else {
-        const data = await searchTagalogWord(searchTerm);
-        setTagalogResults(data);
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${searchTerm.trim()}`);
+      
+      if (!response.ok) {
+        throw new Error('Word not found');
       }
+
+      const data = await response.json();
+      setResults(data);
     } catch (err) {
-      setError(`Word not found in ${language} dictionary. Please try another word.`);
+      setError('Word not found. Please try another word.');
       console.error('Dictionary API error:', err);
     } finally {
       setLoading(false);
@@ -95,7 +73,7 @@ const Dictionary = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -105,54 +83,32 @@ const Dictionary = () => {
           <CardHeader className="text-center pb-4">
             <CardTitle className={`flex items-center justify-center text-2xl text-${currentTheme.textColor}`}>
               <BookOpen className="mr-2" size={24} />
-              Enhanced Dictionary
+              Dictionary
             </CardTitle>
             <p className={`text-${currentTheme.textColor} mt-2 opacity-80`}>
-              Search English and Filipino words with pronunciation
+              Search English words with pronunciation
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <Select value={language} onValueChange={setLanguage}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Select language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="english">
-                    <div className="flex items-center">
-                      <Globe size={16} className="mr-2" />
-                      English
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="filipino">
-                    <div className="flex items-center">
-                      <Globe size={16} className="mr-2" />
-                      Filipino (Tagalog)
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <div className="flex space-x-3">
-                <Input
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={`Enter ${language} word to search...`}
-                  className="rounded-xl"
-                />
-                <Button
-                  onClick={searchWord}
-                  disabled={loading || !searchTerm.trim()}
-                  className={`bg-gradient-to-r ${currentTheme.headerGradient} hover:opacity-90 rounded-xl px-6`}
-                >
-                  {loading ? (
-                    <Loader2 className="animate-spin" size={16} />
-                  ) : (
-                    <Search size={16} />
-                  )}
-                </Button>
-              </div>
+            <div className="flex space-x-3">
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Enter word to search..."
+                className="rounded-xl"
+              />
+              <Button
+                onClick={searchWord}
+                disabled={loading || !searchTerm.trim()}
+                className={`bg-gradient-to-r ${currentTheme.headerGradient} hover:opacity-90 rounded-xl px-6`}
+              >
+                {loading ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Search size={16} />
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -168,7 +124,6 @@ const Dictionary = () => {
         </motion.div>
       )}
 
-      {/* English Results */}
       {results.length > 0 && (
         <div className="space-y-4">
           {results.map((entry, index) => (
@@ -246,65 +201,10 @@ const Dictionary = () => {
         </div>
       )}
 
-      {/* Tagalog Results */}
-      {tagalogResults.length > 0 && (
-        <div className="space-y-4">
-          {tagalogResults.map((entry, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="shadow-lg">
-                <CardContent className="p-6">
-                  <div className="mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800 capitalize mb-2">
-                      {entry.word}
-                    </h2>
-                    {entry.type && entry.type !== 'suggestion' && (
-                      <Badge variant="secondary" className="mb-3">
-                        {entry.type}
-                      </Badge>
-                    )}
-                    {entry.pronunciation && (
-                      <p className="text-gray-600 italic text-sm mb-2">
-                        🔊 Pronunciation: {entry.pronunciation}
-                      </p>
-                    )}
-                    {entry.etymology && (
-                      <p className="text-gray-500 text-xs mb-2">
-                        📚 Etymology: {entry.etymology}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className={`pl-4 border-l-2 ${entry.type === 'suggestion' ? 'border-amber-300' : 'border-green-200'}`}>
-                    <p className={`text-gray-800 mb-1 ${entry.type === 'suggestion' ? 'text-amber-700' : ''}`}>
-                      {entry.definition}
-                    </p>
-                    {entry.example && (
-                      <p className="text-gray-600 italic text-sm">
-                        💬 Example: "{entry.example}"
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {!loading && !error && results.length === 0 && tagalogResults.length === 0 && searchTerm && (
+      {!loading && !error && results.length === 0 && searchTerm && (
         <div className="text-center py-12">
           <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
           <p className="text-gray-600">Search for a word to see its definition</p>
-          {language === 'filipino' && (
-            <p className="text-sm text-gray-500 mt-2">
-              Try words like: kumusta, salamat, mahal, pamilya, bahay, pagkain, maganda, masaya
-            </p>
-          )}
         </div>
       )}
     </div>

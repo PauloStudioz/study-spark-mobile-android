@@ -9,7 +9,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 const PomodoroTimer = () => {
   const { currentTheme } = useTheme();
-  const [time, setTime] = useState(25 * 60); // 25 minutes in seconds
+  const [time, setTime] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState<'focus' | 'break'>('focus');
   const [settings, setSettings] = useState({
@@ -34,7 +34,6 @@ const PomodoroTimer = () => {
         setTime((prevTime) => prevTime - 1);
       }, 1000);
     } else if (time === 0) {
-      // Timer finished
       setIsActive(false);
       playAlarm();
       
@@ -57,7 +56,6 @@ const PomodoroTimer = () => {
   }, [isActive, time, mode, sessions, settings]);
 
   const playAlarm = () => {
-    // Create a simple beep sound
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -102,7 +100,6 @@ const PomodoroTimer = () => {
   };
 
   const handleInputChange = (field: keyof typeof settings, value: string) => {
-    // Allow empty string for editing, otherwise parse to number
     const numValue = value === '' ? 1 : Math.max(1, Math.min(99, parseInt(value) || 1));
     setSettings({
       ...settings,
@@ -111,7 +108,7 @@ const PomodoroTimer = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -120,23 +117,13 @@ const PomodoroTimer = () => {
         <Card className={`bg-gradient-to-br ${currentTheme.cardGradient} border-0 shadow-lg`}>
           <CardContent className="p-8 text-center">
             <div className="relative mb-6">
-              <motion.div
-                className={`w-48 h-48 mx-auto rounded-full bg-gradient-to-br ${currentTheme.headerGradient} flex items-center justify-center shadow-2xl`}
-                animate={{
-                  scale: isActive ? [1, 1.02, 1] : 1,
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: isActive ? Infinity : 0,
-                  repeatType: "reverse"
-                }}
-              >
+              <div className={`w-48 h-48 mx-auto rounded-full bg-gradient-to-br ${currentTheme.headerGradient} flex items-center justify-center shadow-2xl`}>
                 <div className="w-40 h-40 bg-white rounded-full flex items-center justify-center">
                   <span className="text-4xl font-bold text-gray-800">
                     {formatTime(time)}
                   </span>
                 </div>
-              </motion.div>
+              </div>
               
               <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-2">
                 <Progress 
