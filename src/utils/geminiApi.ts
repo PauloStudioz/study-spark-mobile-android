@@ -34,7 +34,7 @@ Text to analyze: ${text}`
         }],
         generationConfig: {
           temperature: 0.3,
-          topK: 5,
+          topK: 6,
           topP: 0.95,
           maxOutputTokens: 2048,
         },
