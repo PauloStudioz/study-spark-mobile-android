@@ -9,7 +9,6 @@ import Dictionary from '../components/Dictionary';
 import Flashcards from '../components/Flashcards';
 import TodoList from '../components/TodoList';
 import QuizMaker from '../components/QuizMaker';
-import StudyAnalytics from '../components/StudyAnalytics';
 import Navigation from '../components/Navigation';
 import Settings from '../components/Settings';
 import NotificationCenter from '../components/NotificationCenter';
@@ -35,8 +34,6 @@ const AppContent = () => {
         return <Flashcards />;
       case 'todo':
         return <TodoList />;
-      case 'analytics':
-        return <StudyAnalytics />;
       default:
         return <ImmersivePomodoroTimer />;
     }
@@ -69,7 +66,7 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className="p-4 pb-32">
+        <main className="p-4 pb-24">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, x: 20 }}

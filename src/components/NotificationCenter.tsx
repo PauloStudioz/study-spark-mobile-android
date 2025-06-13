@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, BellOff, Check, X, Settings } from 'lucide-react';
@@ -102,11 +101,7 @@ const NotificationCenter = () => {
         icon: '/favicon.ico',
         badge: '/favicon.ico',
         tag: notification.id,
-        requireInteraction: notification.actionable,
-        actions: notification.actionable ? [
-          { action: 'view', title: 'View Task' },
-          { action: 'dismiss', title: 'Dismiss' }
-        ] : undefined
+        requireInteraction: notification.actionable
       });
 
       browserNotification.onclick = () => {
