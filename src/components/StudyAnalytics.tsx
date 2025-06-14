@@ -1,9 +1,5 @@
+
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Clock, Target, Award, Calendar, Brain, Crown } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
 import StudyAnalyticsContent from './StudyAnalyticsContent';
@@ -41,14 +37,12 @@ const StudyAnalytics = () => {
     const now = new Date();
     const timeframeDays = selectedTimeframe === 'week' ? 7 : selectedTimeframe === 'month' ? 30 : 365;
     const cutoffDate = new Date(now.getTime() - timeframeDays * 24 * 60 * 60 * 1000);
-    
     return studySessions.filter(session => new Date(session.date) >= cutoffDate);
   };
 
   const getSubjectStats = (): SubjectStats[] => {
     const sessions = getTimeframeData();
     const subjectMap = new Map<string, { totalTime: number; sessions: number }>();
-    
     sessions.forEach(session => {
       const existing = subjectMap.get(session.subject) || { totalTime: 0, sessions: 0 };
       subjectMap.set(session.subject, {
@@ -56,9 +50,7 @@ const StudyAnalytics = () => {
         sessions: existing.sessions + 1
       });
     });
-
     const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
-    
     return Array.from(subjectMap.entries()).map(([subject, stats], index) => ({
       subject,
       totalTime: stats.totalTime,
@@ -71,7 +63,6 @@ const StudyAnalytics = () => {
   const getDailyStats = () => {
     const sessions = getTimeframeData();
     const dailyMap = new Map<string, number>();
-    
     sessions.forEach(session => {
       const date = new Date(session.date).toLocaleDateString();
       dailyMap.set(date, (dailyMap.get(date) || 0) + session.duration);
@@ -90,15 +81,12 @@ const StudyAnalytics = () => {
   const getFocusPatterns = () => {
     const sessions = getTimeframeData();
     const hourMap = new Map<number, number>();
-    
     sessions.forEach(session => {
       const hour = new Date(session.date).getHours();
       hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
     });
-
     const bestHour = Array.from(hourMap.entries())
       .sort(([,a], [,b]) => b - a)[0];
-    
     return bestHour ? `${bestHour[0]}:00 - ${bestHour[0] + 1}:00` : 'No data';
   };
 
@@ -107,11 +95,8 @@ const StudyAnalytics = () => {
     const totalSessions = sessions.length;
     const totalTime = sessions.reduce((sum, session) => sum + session.duration, 0);
     const averageSession = totalSessions > 0 ? totalTime / totalSessions : 0;
-    
-    // Score based on consistency and session length
     const consistencyScore = Math.min(totalSessions * 10, 100);
     const qualityScore = Math.min(averageSession * 2, 100);
-    
     return Math.round((consistencyScore + qualityScore) / 2);
   };
 
@@ -122,8 +107,7 @@ const StudyAnalytics = () => {
 
   return (
     <div className="w-full h-full flex flex-col bg-white dark:bg-gray-950">
-      {/* Only the analytics section will scroll, not the outer page */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 pb-24">
+      <div className="flex-1 p-4 pb-24">
         <StudyAnalyticsContent
           subjectStats={subjectStats}
           dailyStats={dailyStats}
