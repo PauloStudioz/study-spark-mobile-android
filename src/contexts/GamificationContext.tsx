@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface Achievement {
@@ -21,6 +20,7 @@ export interface UserStats {
   totalStudyTime: number;
   quizQuestionsCorrect: number;
   routinesCompleted: number;
+  lastActiveDate?: string; // New: track last day activity for better streaks
 }
 
 interface GamificationContextType {
@@ -108,7 +108,8 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     flashcardsReviewed: 0,
     totalStudyTime: 0,
     quizQuestionsCorrect: 0,
-    routinesCompleted: 0
+    routinesCompleted: 0,
+    lastActiveDate: undefined
   });
 
   const [achievements, setAchievements] = useState<Achievement[]>(defaultAchievements);
@@ -131,7 +132,39 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     localStorage.setItem('studymate-achievements', JSON.stringify(newAchievements));
   };
 
-  const calculateLevel = (points: number) => Math.floor(points / 100) + 1;
+  // Fix: require 100 XP per level-up (level 2:100, level 3:200, ...)
+  const calculateLevel = (points: number) => {
+    if (points < 100) return 1;
+    return Math.floor(points / 100) + 1;
+  };
+
+  // Track streak: increment if activity today is consecutive to last, else reset
+  function handleStreak(newStats: UserStats): UserStats {
+    const today = new Date().toDateString();
+    let updatedStats = { ...newStats };
+
+    if (!newStats.lastActiveDate) {
+      updatedStats.streak = 1;
+      updatedStats.lastActiveDate = today;
+    } else {
+      const lastDate = new Date(newStats.lastActiveDate);
+      const diffDays = Math.floor(
+        (new Date(today).getTime() - lastDate.getTime())
+        / (1000 * 60 * 60 * 24)
+      );
+
+      if (diffDays === 0) {
+        // Already updated today, do nothing
+      } else if (diffDays === 1) {
+        updatedStats.streak = (newStats.streak || 0) + 1;
+        updatedStats.lastActiveDate = today;
+      } else {
+        updatedStats.streak = 1;
+        updatedStats.lastActiveDate = today;
+      }
+    }
+    return updatedStats;
+  }
 
   const showNotification = (message: string) => {
     console.log(message); // For debugging
@@ -189,115 +222,123 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const addPoints = (points: number, activity: string) => {
-    const newStats = {
+    let newStats = {
       ...userStats,
       totalPoints: userStats.totalPoints + points,
-      level: calculateLevel(userStats.totalPoints + points)
     };
-    
+    newStats.level = calculateLevel(newStats.totalPoints);
+
+    newStats = handleStreak(newStats);
+
     const newAchievements = checkAchievements(newStats);
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
-    
     showNotification(`+${points} XP for ${activity}!`);
   };
 
   const completeSession = () => {
     const points = 25;
-    const newStats = {
+    let newStats = {
       ...userStats,
       sessionsCompleted: userStats.sessionsCompleted + 1,
       totalPoints: userStats.totalPoints + points
     };
     newStats.level = calculateLevel(newStats.totalPoints);
-    
+
+    newStats = handleStreak(newStats);
+
     const newAchievements = checkAchievements(newStats);
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
-    
     showNotification(`+${points} XP for completing study session!`);
   };
 
   const completeTask = () => {
     const points = 10;
-    const newStats = {
+    let newStats = {
       ...userStats,
       tasksCompleted: userStats.tasksCompleted + 1,
       totalPoints: userStats.totalPoints + points
     };
     newStats.level = calculateLevel(newStats.totalPoints);
-    
+
+    newStats = handleStreak(newStats);
+
     const newAchievements = checkAchievements(newStats);
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
-    
     showNotification(`+${points} XP for completing task!`);
   };
 
   const reviewFlashcard = (difficulty: 'easy' | 'medium' | 'hard') => {
-    let points = 5; // base points
+    let points = 5;
     if (difficulty === 'easy') points = 10;
     else if (difficulty === 'medium') points = 7;
     else if (difficulty === 'hard') points = 3;
 
-    const newStats = {
+    let newStats = {
       ...userStats,
       flashcardsReviewed: userStats.flashcardsReviewed + 1,
       totalPoints: userStats.totalPoints + points
     };
     newStats.level = calculateLevel(newStats.totalPoints);
-    
+
+    newStats = handleStreak(newStats);
+
     const newAchievements = checkAchievements(newStats);
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
-    
     showNotification(`+${points} XP for flashcard review!`);
   };
 
   const correctQuizAnswer = () => {
     const points = 15;
-    const newStats = {
+    let newStats = {
       ...userStats,
       quizQuestionsCorrect: userStats.quizQuestionsCorrect + 1,
       totalPoints: userStats.totalPoints + points
     };
     newStats.level = calculateLevel(newStats.totalPoints);
-    
+
+    newStats = handleStreak(newStats);
+
     const newAchievements = checkAchievements(newStats);
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
-    
     showNotification(`+${points} XP for correct answer!`);
   };
 
   const completeRoutine = () => {
     const points = 30;
-    const newStats = {
+    let newStats = {
       ...userStats,
       routinesCompleted: userStats.routinesCompleted + 1,
       totalPoints: userStats.totalPoints + points
     };
     newStats.level = calculateLevel(newStats.totalPoints);
-    
+
+    newStats = handleStreak(newStats);
+
     const newAchievements = checkAchievements(newStats);
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
-    
     showNotification(`+${points} XP for completing routine!`);
   };
 
   const addStudyTime = (minutes: number) => {
-    const newStats = {
+    let newStats = {
       ...userStats,
       totalStudyTime: userStats.totalStudyTime + minutes
     };
-    
+
+    newStats = handleStreak(newStats);
+
     const newAchievements = checkAchievements(newStats);
     setUserStats(newStats);
     setAchievements(newAchievements);

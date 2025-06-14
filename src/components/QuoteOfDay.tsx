@@ -10,26 +10,48 @@ interface QuoteData {
   author: string;
 }
 
+const fallbackQuotes: QuoteData[] = [
+  { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
+  { text: "The beautiful thing about learning is that no one can take it away from you.", author: "B.B. King" },
+  { text: "Study hard what interests you the most in the most undisciplined, irreverent and original manner possible.", author: "Richard Feynman" },
+  { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+  // Mindset / Abraham Lincoln + more motivational
+  { text: "Give me six hours to chop down a tree and I will spend the first four sharpening the axe.", author: "Abraham Lincoln" },
+  { text: "Whether you think you can or think you can’t, you’re right.", author: "Henry Ford" },
+  { text: "It always seems impossible until it’s done.", author: "Nelson Mandela" },
+  { text: "Don’t wish it were easier; wish you were better.", author: "Jim Rohn" },
+  { text: "You don’t have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+  { text: "Success is not in what you have, but who you are.", author: "Bo Bennett" },
+  { text: "The mind is not a vessel to be filled but a fire to be kindled.", author: "Plutarch" },
+  { text: "Great things are done by a series of small things brought together.", author: "Vincent Van Gogh" },
+  { text: "What you get by achieving your goals is not as important as what you become by achieving your goals.", author: "Zig Ziglar" },
+  { text: "Optimism is the faith that leads to achievement. Nothing can be done without hope and confidence.", author: "Helen Keller" },
+  { text: "All progress takes place outside the comfort zone.", author: "Michael John Bobak" },
+  { text: "If you’re going through hell, keep going.", author: "Winston Churchill" },
+  { text: "Vision without execution is just hallucination.", author: "Thomas Edison" },
+  { text: "Believe you can and you’re halfway there.", author: "Theodore Roosevelt" },
+  { text: "You miss 100% of the shots you don’t take.", author: "Wayne Gretzky" },
+];
+
+const getRandomQuote = (excludeText: string): QuoteData => {
+  let possible = fallbackQuotes.filter(q => q.text !== excludeText);
+  if (possible.length === 0) possible = fallbackQuotes;
+  return possible[Math.floor(Math.random() * possible.length)];
+};
+
 const QuoteOfDay = () => {
   const { isDarkMode } = useTheme();
   const [quote, setQuote] = useState<QuoteData>({ text: '', author: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [quoteDate, setQuoteDate] = useState<string>("");
 
-  const fallbackQuotes = [
-    { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
-    { text: "The beautiful thing about learning is that no one can take it away from you.", author: "B.B. King" },
-    { text: "Study hard what interests you the most in the most undisciplined, irreverent and original manner possible.", author: "Richard Feynman" },
-    { text: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
-    { text: "The expert in anything was once a beginner.", author: "Helen Hayes" }
-  ];
-
-  // Fetch quote from API or fallback
+  // Try to get a new API quote, fallback with fresh (non-repeating) fallback quote
   const fetchQuote = async (forceNew = false) => {
     setIsLoading(true);
     try {
       const today = new Date().toDateString();
-      // Try loading cached for today unless forcing new
+      // Try cached for today, unless forcing new
       if (!forceNew) {
         const savedDate = localStorage.getItem('quote-date');
         const savedQuote = localStorage.getItem('daily-quote');
@@ -40,21 +62,33 @@ const QuoteOfDay = () => {
           return;
         }
       }
-      // Fetch fresh quote
-      const response = await fetch('https://zenquotes.io/api/today');
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      if (Array.isArray(data) && data.length && data[0]?.q && data[0]?.a) {
-        const newQuote = { text: data[0].q, author: data[0].a };
-        setQuote(newQuote);
+      // Try API:
+      let gotApiQuote = false;
+      try {
+        const response = await fetch('https://zenquotes.io/api/today');
+        if (!response.ok) throw new Error('Failed to fetch');
+        const data = await response.json();
+        if (Array.isArray(data) && data.length && data[0]?.q && data[0]?.a) {
+          const apiQuote = { text: data[0].q, author: data[0].a };
+          // Prevent repeating:
+          if (apiQuote.text !== quote.text) {
+            setQuote(apiQuote);
+            setQuoteDate(today);
+            localStorage.setItem('quote-date', today);
+            localStorage.setItem('daily-quote', JSON.stringify(apiQuote));
+            gotApiQuote = true;
+          }
+        }
+      } catch (_err) {}
+      // Fallback:
+      if (!gotApiQuote) {
+        const prevQuote = quote.text;
+        const randomQuote = getRandomQuote(prevQuote);
+        setQuote(randomQuote);
         setQuoteDate(today);
         localStorage.setItem('quote-date', today);
-        localStorage.setItem('daily-quote', JSON.stringify(newQuote));
-      } else throw new Error('bad quote');
-    } catch (err) {
-      // fallback
-      const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
-      setQuote(randomQuote);
+        localStorage.setItem('daily-quote', JSON.stringify(randomQuote));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +96,7 @@ const QuoteOfDay = () => {
 
   useEffect(() => {
     fetchQuote(false);
+    // eslint-disable-next-line
   }, []);
 
   const refreshQuote = () => {
