@@ -365,6 +365,15 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     saveData(defaultStats, resetAchievements);
   };
 
+  // Only return 0-100% for level progress and never negative:
+  const getLevelProgress = (stats: UserStats) => {
+    const nextLevelXP = (stats.level + 1) * 100;
+    const currentLevelXP = stats.level * 100;
+    if (stats.totalPoints < currentLevelXP) return 0;
+    const percent = ((stats.totalPoints - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+    return Math.max(0, Math.min(100, percent));
+  };
+
   return (
     <GamificationContext.Provider value={{
       userStats,

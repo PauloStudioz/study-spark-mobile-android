@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { scheduleAnki, SchedulerState, ReviewGrade } from "@/utils/ankiScheduler";
+import { useGamification } from "@/contexts/GamificationContext";
 
 export interface Flashcard {
   id: string;
@@ -21,11 +22,19 @@ interface FlashcardStudyProps {
   onClose: () => void;
 }
 
-const reviewButtons: { label: string; grade: ReviewGrade; color: string }[] = [
-  { label: "Again", grade: "again", color: "bg-red-500" },
-  { label: "Hard", grade: "hard", color: "bg-yellow-600" },
-  { label: "Good", grade: "good", color: "bg-blue-600" },
-  { label: "Easy", grade: "easy", color: "bg-green-600" },
+// XP by grade (must match GamificationContext as much as possible)
+const GRADE_XP: Record<ReviewGrade, number> = {
+  again: 0,
+  hard: 3,
+  good: 7,
+  easy: 10,
+};
+
+const reviewButtons: { label: string; grade: ReviewGrade; color: string; xp: number }[] = [
+  { label: "Again", grade: "again", color: "bg-red-500", xp: GRADE_XP["again"] },
+  { label: "Hard", grade: "hard", color: "bg-yellow-600", xp: GRADE_XP["hard"] },
+  { label: "Good", grade: "good", color: "bg-blue-600", xp: GRADE_XP["good"] },
+  { label: "Easy", grade: "easy", color: "bg-green-600", xp: GRADE_XP["easy"] },
 ];
 
 const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
@@ -34,14 +43,22 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   onUpdateCard,
   onClose,
 }) => {
-  // Filter due cards
+  const { reviewFlashcard, showNotification } = useGamification();
+
+  // Filter due cards now
   const now = new Date();
-  const dueCards = flashcards.filter(fc => new Date(fc.nextReview) <= now);
+  // Only show due cards
+  const initialDue = flashcards.filter(fc => new Date(fc.nextReview) <= now);
+  // Session queue: holds the indices of cards still to review this round
+  const [queue, setQueue] = useState(initialDue.map((_, i) => i));
   const [index, setIndex] = useState(0);
   const [showBack, setShowBack] = useState(false);
 
-  // If no cards due
-  if (dueCards.length === 0)
+  // Track which indices should repeat (e.g. hard)
+  const [repeatQueue, setRepeatQueue] = useState<number[]>([]);
+
+  // If no cards due OR emptied queue
+  if (queue.length === 0 && repeatQueue.length === 0)
     return (
       <div className="text-center space-y-4">
         <h2 className="text-xl font-bold">All done for now!</h2>
@@ -49,21 +66,58 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         <Button className="mt-6" onClick={onClose}>Back to Decks</Button>
       </div>
     );
+  
+  // If current queue empty but has repeat: go again
+  React.useEffect(() => {
+    if (queue.length === 0 && repeatQueue.length > 0) {
+      setQueue(repeatQueue);
+      setRepeatQueue([]);
+      setIndex(0);
+    }
+    // eslint-disable-next-line
+  }, [queue, repeatQueue]);
 
-  const card = dueCards[index];
+  // Session cards: include all due cards, or just repeat cards
+  const dueCards = initialDue;
+  // Defensive (should always be safe as we never show unless queue.length > 0)
+  const currIdx = queue.length > 0 ? queue[index] : 0;
+  const card = dueCards[currIdx];
+
+  // Assign XP activity label
+  const getDiffLabel = (grade: ReviewGrade) => {
+    if (grade === "again") return "hard";
+    if (grade === "hard") return "hard";
+    if (grade === "good") return "medium";
+    if (grade === "easy") return "easy";
+    return "medium";
+  };
 
   const review = (grade: ReviewGrade) => {
+    // Logic for XP
+    let xp = GRADE_XP[grade];
+    reviewFlashcard(getDiffLabel(grade)); // Sends to gamification
+    if (xp > 0) showNotification(`+${xp} XP (flashcards)`);
+
+    // Schedule next review
     const newState = scheduleAnki(card.state, grade);
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + newState.interval);
+
     onUpdateCard(card.id, {
       state: newState,
       nextReview: nextReview.toISOString(),
     });
+
+    // Add "Hard"-marked cards to re-review at end of session *before* finishing
+    if (grade === "hard") {
+      setRepeatQueue(old => [...old, currIdx]);
+    }
+
     setShowBack(false);
-    // Show next due card, or loop if at end
-    if (index < dueCards.length - 1) setIndex(i => i + 1);
-    else setIndex(0);
+
+    // Next in queue or wrap
+    if (index < queue.length - 1) setIndex(i => i + 1);
+    else setQueue(q => q.filter((_, idx) => idx !== index)); // Remove just-finished card from queue
   };
 
   return (
@@ -73,7 +127,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
           <ChevronLeft size={16} /> Back to Decks
         </Button>
         <Badge variant="secondary" className="px-3 py-1">
-          {index + 1} / {dueCards.length}
+          {queue.length > 0 ? index + 1 : 0} / {queue.length}
         </Badge>
       </div>
 
@@ -104,7 +158,9 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
               className={btn.color + " rounded-xl px-4"}
               onClick={() => review(btn.grade)}
             >
-              {btn.label}
+              {btn.label} {btn.xp > 0 && (
+                <span className="text-xs opacity-70 ml-1">+{btn.xp}XP</span>
+              )}
             </Button>
           ))}
         </div>
@@ -112,16 +168,18 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 
       <div className="flex justify-between">
         <Button
-          onClick={() => setIndex(index === 0 ? dueCards.length - 1 : index - 1)}
+          onClick={() => setIndex(index === 0 ? queue.length - 1 : index - 1)}
           variant="outline"
           className="rounded-xl px-6"
+          disabled={queue.length === 0}
         >
           <ChevronLeft size={16} /> Previous
         </Button>
         <Button
-          onClick={() => setIndex((index + 1) % dueCards.length)}
+          onClick={() => setIndex((index + 1) % queue.length)}
           variant="outline"
           className="rounded-xl px-6"
+          disabled={queue.length === 0}
         >
           Next <ChevronRight size={16} />
         </Button>
@@ -131,3 +189,4 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 };
 
 export default FlashcardStudy;
+

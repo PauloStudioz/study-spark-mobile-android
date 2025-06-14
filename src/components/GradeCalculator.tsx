@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,7 +72,7 @@ const GradeCalculator = () => {
     }));
   };
 
-  // Add grade to subject (using that subject's draft)
+  // Add grade to subject (refined: only reset if successful, always keep fields visible)
   const addGrade = (subjectId: string) => {
     const draft = assignmentDrafts[subjectId];
     if (
@@ -97,6 +96,7 @@ const GradeCalculator = () => {
           : subject
       )
     );
+    // Only reset if grade added
     setAssignmentDrafts(drafts => ({
       ...drafts,
       [subjectId]: { name: '', score: '', maxScore: '', weight: '' }
@@ -207,7 +207,7 @@ const GradeCalculator = () => {
                     className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2"
                     title="Add assignment"
                     onClick={() => {
-                      // Focus the grade entry fields (not modal for simplicity)
+                      // Focus/flicker (no hiding/showing needed now)
                       document.getElementById(`add-draft-${subject.id}`)?.scrollIntoView({behavior: 'smooth', block: 'center'});
                     }}
                   >
@@ -258,7 +258,7 @@ const GradeCalculator = () => {
                   );
                 })}
               </div>
-              {/* Assignment draft for this subject */}
+              {/* Assignment draft for this subject: always visible, does not hide after add */}
               <div className="space-y-2 pt-2 border-t border-gray-300/10 mt-4" id={`add-draft-${subject.id}`}>
                 <Input
                   placeholder="Assignment name"
@@ -289,6 +289,7 @@ const GradeCalculator = () => {
                     className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                   />
                 </div>
+                {/* Add disables if fields missing */}
                 <Button onClick={() => addGrade(subject.id)} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
                   <Plus size={20} className="mr-2" />
                   Add Assignment
