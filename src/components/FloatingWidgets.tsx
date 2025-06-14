@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Calculator, StickyNote, Timer, X, Minus, Plus, RotateCcw } from 'lucide-react';
@@ -180,21 +179,21 @@ const FloatingWidgets = () => {
 
   return (
     <>
-      {/* Main Quick Access Button - Now centered in bottom navigation */}
+      {/* Main Quick Access Button - Positioned above navigation */}
       <motion.div
-        className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-50"
+        className="fixed bottom-44 left-1/2 transform -translate-x-1/2 z-50"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
       >
         <Button
           onClick={() => setShowQuickAccess(!showQuickAccess)}
-          className={`w-14 h-14 rounded-full shadow-xl border-2 ${
+          className={`w-12 h-12 rounded-full shadow-xl border-2 ${
             isDarkMode
               ? 'bg-gradient-to-r from-blue-600 to-purple-600 border-blue-400 hover:from-blue-700 hover:to-purple-700'
               : 'bg-gradient-to-r from-blue-500 to-purple-500 border-blue-300 hover:from-blue-600 hover:to-purple-600'
           } transition-all duration-300`}
         >
-          <Zap size={24} className="text-white relative z-10" />
+          <Zap size={20} className="text-white relative z-10" />
           {/* Pulsing effect */}
           <div className="absolute inset-0 rounded-full bg-blue-400 opacity-30 animate-ping" />
         </Button>
@@ -208,7 +207,7 @@ const FloatingWidgets = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-48 left-1/2 transform -translate-x-1/2 z-40"
+            className="fixed bottom-60 left-1/2 transform -translate-x-1/2 z-40"
           >
             <Card className={`${
               isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
