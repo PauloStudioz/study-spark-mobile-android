@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
@@ -50,13 +49,13 @@ const StudyAnalytics = () => {
         sessions: existing.sessions + 1
       });
     });
-    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
+    const colorsArr = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
     return Array.from(subjectMap.entries()).map(([subject, stats], index) => ({
       subject,
       totalTime: stats.totalTime,
       sessions: stats.sessions,
       averageSession: Math.round(stats.totalTime / stats.sessions),
-      color: colors[index % colors.length]
+      color: colorsArr[index % colorsArr.length]
     }));
   };
 
