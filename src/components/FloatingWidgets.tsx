@@ -14,6 +14,9 @@ const FloatingWidgets = () => {
   const [showNotes, setShowNotes] = useState(false);
   const [showMiniTimer, setShowMiniTimer] = useState(false);
   
+  // Draggable position state
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  
   // Calculator state
   const [display, setDisplay] = useState('0');
   const [previousValue, setPreviousValue] = useState<number | null>(null);
@@ -179,9 +182,18 @@ const FloatingWidgets = () => {
 
   return (
     <>
-      {/* Main Quick Access Button - Positioned above navigation */}
+      {/* Main Quick Access Button - Now draggable */}
       <motion.div
+        drag
+        dragConstraints={{
+          left: -window.innerWidth / 2 + 50,
+          right: window.innerWidth / 2 - 50,
+          top: -window.innerHeight / 2 + 50,
+          bottom: window.innerHeight / 2 - 100
+        }}
         className="fixed bottom-44 left-1/2 transform -translate-x-1/2 z-50"
+        style={{ x: position.x, y: position.y }}
+        onDragEnd={(_, info) => setPosition({ x: info.offset.x, y: info.offset.y })}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
       >
@@ -191,7 +203,7 @@ const FloatingWidgets = () => {
             isDarkMode
               ? 'bg-gradient-to-r from-blue-600 to-purple-600 border-blue-400 hover:from-blue-700 hover:to-purple-700'
               : 'bg-gradient-to-r from-blue-500 to-purple-500 border-blue-300 hover:from-blue-600 hover:to-purple-600'
-          } transition-all duration-300`}
+          } transition-all duration-300 cursor-grab active:cursor-grabbing`}
         >
           <Zap size={20} className="text-white relative z-10" />
           {/* Pulsing effect */}
