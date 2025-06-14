@@ -1,6 +1,19 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Timer, Calculator, BookOpen, Brain, CheckSquare, HelpCircle, BarChart3, StickyNote, Calendar, GraduationCap, MessageCircle } from 'lucide-react';
+import { 
+  Timer, 
+  Calculator, 
+  BookOpen, 
+  Brain, 
+  CheckSquare, 
+  HelpCircle, 
+  BarChart3, 
+  StickyNote, 
+  Calendar, 
+  GraduationCap, 
+  MessageCircle 
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -13,42 +26,43 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
   const { getThemeColors, isDarkMode } = useTheme();
   const colors = getThemeColors();
 
-  // Organized into logical groups
+  // Organized by importance, primary tools first
   const navItems = [
-    // Core Study
+    // Core focus
     { id: 'timer', icon: Timer, label: 'Timer' },
     { id: 'todo', icon: CheckSquare, label: 'Todo' },
-    { id: 'quiz', icon: HelpCircle, label: 'Quiz' },
     { id: 'math', icon: Calculator, label: 'Math' },
-    // Productivity
+    { id: 'quiz', icon: HelpCircle, label: 'Quiz' },
+    // Learning support
+    { id: 'flashcards', icon: Brain, label: 'Cards' },
+    { id: 'notes', icon: StickyNote, label: 'Notes' },
+    // Motivation
+    { id: 'quote', icon: MessageCircle, label: 'Quote' },
+    // Tracking
     { id: 'grades', icon: GraduationCap, label: 'Grades' },
+    // -- Hidden for now --
     { id: 'schedule', icon: Calendar, label: 'Schedule' },
     { id: 'analytics', icon: BarChart3, label: 'Stats' },
-    // Learning Tools
-    { id: 'flashcards', icon: Brain, label: 'Cards' },
     { id: 'dictionary', icon: BookOpen, label: 'Dict' },
-    // Other/Extras
-    { id: 'notes', icon: StickyNote, label: 'Notes' },
-    { id: 'quote', icon: MessageCircle, label: 'Quote' },
   ];
 
-  // Only display the most relevant tabs; move less common options to the end or consider hiding if user requests
-  // Here, keep 9 tabs, but easy to restore if needed
-  const mainTabs = navItems.slice(0, 9);
-  const moreTabs = navItems.slice(9);
+  // Show only the main 8 tabs for clarity and neatness
+  const mainTabs = navItems.slice(0, 8);
+  // Tabs not shown for now (could be added to a "More" menu in the future)
+  // const moreTabs = navItems.slice(8);
 
   return (
     <nav className={`fixed bottom-0 left-0 right-0 ${
       isDarkMode 
-        ? 'bg-gray-800/95 border-t border-gray-700' 
+        ? 'bg-gray-800/95 border-t border-gray-700'
         : `bg-gradient-to-r ${colors.headerGradient}`
-    } p-2 shadow-lg rounded-t-2xl max-w-md mx-auto backdrop-blur-sm`}>
+    } p-2 shadow-lg rounded-t-2xl max-w-md mx-auto backdrop-blur-sm z-50`}>
       {/* Organized single row - main tabs */}
-      <div className="grid grid-cols-9 gap-1">
+      <div className="grid grid-cols-8 gap-1">
         {mainTabs.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
-          
+
           return (
             <Button
               key={item.id}
@@ -90,3 +104,4 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
 };
 
 export default Navigation;
+
