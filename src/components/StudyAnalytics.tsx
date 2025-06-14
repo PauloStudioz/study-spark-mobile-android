@@ -1,125 +1,88 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
-import StudyAnalyticsContent from './StudyAnalyticsContent';
-
-interface StudySession {
-  date: string;
-  subject: string;
-  duration: number;
-  type: 'pomodoro' | 'flashcard' | 'task' | 'quiz';
-}
-
-interface SubjectStats {
-  subject: string;
-  totalTime: number;
-  sessions: number;
-  averageSession: number;
-  color: string;
-}
+import { Card, CardContent } from "@/components/ui/card";
+import { Crown, Star, Trophy } from "lucide-react";
 
 const StudyAnalytics = () => {
-  const { getThemeColors, isDarkMode } = useTheme();
-  const colors = getThemeColors();
-  const { userStats, achievements } = useGamification();
-  const [studySessions, setStudySessions] = useState<StudySession[]>([]);
-  const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | 'all'>('week');
+  const { isDarkMode } = useTheme();
+  const { userStats } = useGamification();
 
-  useEffect(() => {
-    const savedSessions = localStorage.getItem('studymate-sessions');
-    if (savedSessions) {
-      setStudySessions(JSON.parse(savedSessions));
-    }
-  }, []);
-
-  const getTimeframeData = () => {
-    const now = new Date();
-    const timeframeDays = selectedTimeframe === 'week' ? 7 : selectedTimeframe === 'month' ? 30 : 365;
-    const cutoffDate = new Date(now.getTime() - timeframeDays * 24 * 60 * 60 * 1000);
-    return studySessions.filter(session => new Date(session.date) >= cutoffDate);
+  const getProgressPercentage = () => {
+    const pointsInCurrentLevel = userStats.totalPoints % 100;
+    return (pointsInCurrentLevel / 100) * 100;
   };
 
-  const getSubjectStats = (): SubjectStats[] => {
-    const sessions = getTimeframeData();
-    const subjectMap = new Map<string, { totalTime: number; sessions: number }>();
-    sessions.forEach(session => {
-      const existing = subjectMap.get(session.subject) || { totalTime: 0, sessions: 0 };
-      subjectMap.set(session.subject, {
-        totalTime: existing.totalTime + session.duration,
-        sessions: existing.sessions + 1
-      });
-    });
-    const colorsArr = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500'];
-    return Array.from(subjectMap.entries()).map(([subject, stats], index) => ({
-      subject,
-      totalTime: stats.totalTime,
-      sessions: stats.sessions,
-      averageSession: Math.round(stats.totalTime / stats.sessions),
-      color: colorsArr[index % colorsArr.length]
-    }));
+  const getPointsToNextLevel = () => {
+    return 100 - (userStats.totalPoints % 100);
   };
-
-  const getDailyStats = () => {
-    const sessions = getTimeframeData();
-    const dailyMap = new Map<string, number>();
-    sessions.forEach(session => {
-      const date = new Date(session.date).toLocaleDateString();
-      dailyMap.set(date, (dailyMap.get(date) || 0) + session.duration);
-    });
-
-    return Array.from(dailyMap.entries())
-      .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-      .slice(-7)
-      .map(([date, minutes]) => ({
-        date: date.split('/').slice(0, 2).join('/'),
-        minutes,
-        hours: Number((minutes / 60).toFixed(1))
-      }));
-  };
-
-  const getFocusPatterns = () => {
-    const sessions = getTimeframeData();
-    const hourMap = new Map<number, number>();
-    sessions.forEach(session => {
-      const hour = new Date(session.date).getHours();
-      hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
-    });
-    const bestHour = Array.from(hourMap.entries())
-      .sort(([,a], [,b]) => b - a)[0];
-    return bestHour ? `${bestHour[0]}:00 - ${bestHour[0] + 1}:00` : 'No data';
-  };
-
-  const getProductivityScore = () => {
-    const sessions = getTimeframeData();
-    const totalSessions = sessions.length;
-    const totalTime = sessions.reduce((sum, session) => sum + session.duration, 0);
-    const averageSession = totalSessions > 0 ? totalTime / totalSessions : 0;
-    const consistencyScore = Math.min(totalSessions * 10, 100);
-    const qualityScore = Math.min(averageSession * 2, 100);
-    return Math.round((consistencyScore + qualityScore) / 2);
-  };
-
-  const subjectStats = getSubjectStats();
-  const dailyStats = getDailyStats();
-  const bestFocusTime = getFocusPatterns();
-  const productivityScore = getProductivityScore();
 
   return (
-    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-4 h-full overflow-hidden flex flex-col`}>
-      <div className="flex-1 overflow-y-auto space-y-4">
-        <StudyAnalyticsContent
-          subjectStats={subjectStats}
-          dailyStats={dailyStats}
-          bestFocusTime={bestFocusTime}
-          productivityScore={productivityScore}
-          userStats={userStats}
-          achievements={achievements}
-          isDarkMode={isDarkMode}
-          colors={colors}
-          selectedTimeframe={selectedTimeframe}
-          setSelectedTimeframe={setSelectedTimeframe}
-        />
+    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-6 h-full flex flex-col justify-center items-center space-y-8`}>
+      {/* Main Level Display */}
+      <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200'} shadow-xl w-full max-w-sm`}>
+        <CardContent className="p-8 text-center">
+          <div className="relative mb-6">
+            <Crown size={64} className="text-yellow-500 mx-auto" />
+            <div className="absolute -top-3 -right-3 bg-yellow-400 text-black font-bold rounded-full w-12 h-12 flex items-center justify-center text-xl shadow-lg">
+              {userStats.level}
+            </div>
+          </div>
+          
+          <h2 className={`text-3xl font-bold mb-2 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+            Level {userStats.level}
+          </h2>
+          
+          <p className={`text-lg mb-4 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-600'}`}>
+            {userStats.totalPoints.toLocaleString()} XP
+          </p>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-gray-300 rounded-full h-3 mb-4 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-3 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${getProgressPercentage()}%` }}
+            />
+          </div>
+          
+          <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {getPointsToNextLevel()} XP to next level
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+        <Card className={`${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-white/80 border-gray-200'} shadow-lg`}>
+          <CardContent className="p-4 text-center">
+            <Star className="text-blue-500 mx-auto mb-2" size={24} />
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Streak</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+              {userStats.streak}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className={`${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-white/80 border-gray-200'} shadow-lg`}>
+          <CardContent className="p-4 text-center">
+            <Trophy className="text-green-500 mx-auto mb-2" size={24} />
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Sessions</p>
+            <p className={`text-xl font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
+              {userStats.sessionsCompleted}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Motivational Message */}
+      <div className="text-center">
+        <p className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          Keep it up! 💪
+        </p>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          You're doing amazing on your learning journey
+        </p>
       </div>
     </div>
   );
