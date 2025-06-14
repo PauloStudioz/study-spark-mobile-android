@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Timer,
@@ -12,45 +13,46 @@ import {
   Calendar,
   GraduationCap,
   MessageCircle,
-  CirclePlus,
+  ChevronLeft,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
-import FloatingRadialMenu from "./FloatingRadialMenu";
-import { useState } from "react";
 
 interface NavigationProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
+// Define main and secondary tabs
 const mainTabs = [
   { id: "timer", icon: Timer, label: "Timer" },
   { id: "todo", icon: CheckSquare, label: "Todo" },
   { id: "math", icon: Calculator, label: "Math" },
   { id: "quiz", icon: HelpCircle, label: "Quiz" },
+  { id: "more", icon: MoreHorizontal, label: "More" },
 ];
 
 const secondaryTabs = [
+  { id: "back", icon: ChevronLeft, label: "Back" },
   { id: "flashcards", icon: Brain, label: "Cards" },
   { id: "notes", icon: StickyNote, label: "Notes" },
   { id: "grades", icon: GraduationCap, label: "Grades" },
-  // Center: Plus button here (not in this array)
   { id: "schedule", icon: Calendar, label: "Schedule" },
   { id: "analytics", icon: BarChart3, label: "Stats" },
   { id: "dictionary", icon: BookOpen, label: "Dict" },
   { id: "quote", icon: MessageCircle, label: "Quote" },
 ];
-// For 7 items: left (3), center (plus), right (3)
-const leftTabs = secondaryTabs.slice(0, 3);
-const rightTabs = secondaryTabs.slice(3);
 
 const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
   const { getThemeColors, isDarkMode } = useTheme();
   const colors = getThemeColors();
 
-  // Plus menu state
-  const [radialOpen, setRadialOpen] = useState(false);
+  // Main/secondary toggler
+  const [showMoreTabs, setShowMoreTabs] = useState(false);
+
+  // Tabs to render
+  const navTabs = showMoreTabs ? secondaryTabs : mainTabs;
 
   return (
     <nav
@@ -61,15 +63,32 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
         backdrop-blur-sm z-50 flex flex-col items-center gap-1`
       }
     >
-      {/* Top row: Main tools only */}
-      <div className="grid grid-cols-4 gap-1 w-full">
-        {mainTabs.map((item) => {
+      {/* Main or More-tabbed row */}
+      <div className={`grid grid-cols-${navTabs.length} gap-1 w-full`}>
+        {navTabs.map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = !showMoreTabs
+            ? activeTab === item.id
+            : false; // Only highlight active in main set
+
+          // Handle More/Back buttons
+          const isSpecial =
+            (!showMoreTabs && item.id === "more") ||
+            (showMoreTabs && item.id === "back");
+
           return (
             <Button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                if (!showMoreTabs && item.id === "more") {
+                  setShowMoreTabs(true);
+                } else if (showMoreTabs && item.id === "back") {
+                  setShowMoreTabs(false);
+                } else if (!isSpecial) {
+                  setActiveTab(item.id);
+                  setShowMoreTabs(false); // always go back to main after secondary feature chosen
+                }
+              }}
               variant="ghost"
               size="sm"
               className={`flex flex-col items-center justify-center p-2 min-w-0 relative h-14 transition-all duration-200
@@ -80,9 +99,11 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                   : isDarkMode
                     ? 'text-gray-300 hover:text-blue-400 hover:bg-gray-700/50'
                     : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
+                }
+                ${isSpecial ? "font-semibold" : ""}
+              `}
             >
-              {isActive && (
+              {isActive && !isSpecial && (
                 <motion.div
                   layoutId="activeTab"
                   className={`absolute inset-0 ${isDarkMode ? 'bg-blue-500/20' : 'bg-white/20'} rounded-lg`}
@@ -90,43 +111,15 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                   transition={{ duration: 0.2 }}
                 />
               )}
-              <Icon size={18} className="relative z-10 mb-1" />
+              <Icon size={20} className="relative z-10 mb-1" />
               <span className="text-xs font-medium relative z-10 truncate leading-tight">{item.label}</span>
             </Button>
           );
         })}
       </div>
-      {/* Plus button in center */}
-      <div className="flex justify-center w-full mt-2 relative z-30">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`
-            !rounded-full !h-14 !w-14 border-2 transition-all duration-200
-            ${isDarkMode
-              ? 'border-blue-400 bg-blue-500/20 text-blue-400 hover:bg-blue-800/40'
-              : 'border-blue-400 bg-white/80 text-blue-600 hover:bg-blue-100'
-            }
-            shadow-xl z-30
-          `}
-          style={{
-            boxShadow: isDarkMode
-              ? '0 2px 8px 0 rgba(34, 139, 230, 0.14)'
-              : '0 2px 8px 0 rgba(28, 100, 242, 0.13)',
-          }}
-          aria-label="More features"
-          onClick={() => setRadialOpen(true)}
-        >
-          <CirclePlus size={32} />
-        </Button>
-      </div>
-      <FloatingRadialMenu
-        isOpen={radialOpen}
-        onClose={() => setRadialOpen(false)}
-        setActiveTab={setActiveTab}
-      />
     </nav>
   );
 };
 
 export default Navigation;
+
