@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Clock, Target, Award, Calendar, Brain } from 'lucide-react';
+import { BarChart3, TrendingUp, Clock, Target, Award, Calendar, Brain, Crown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
 
@@ -23,7 +23,7 @@ interface SubjectStats {
 }
 
 const StudyAnalytics = () => {
-  const { getThemeColors } = useTheme();
+  const { getThemeColors, isDarkMode } = useTheme();
   const colors = getThemeColors();
   const { userStats, achievements } = useGamification();
   const [studySessions, setStudySessions] = useState<StudySession[]>([]);
@@ -78,7 +78,12 @@ const StudyAnalytics = () => {
 
     return Array.from(dailyMap.entries())
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-      .slice(-7);
+      .slice(-7)
+      .map(([date, minutes]) => ({
+        date: date.split('/').slice(0, 2).join('/'),
+        minutes,
+        hours: Number((minutes / 60).toFixed(1))
+      }));
   };
 
   const getFocusPatterns = () => {
@@ -121,13 +126,21 @@ const StudyAnalytics = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className={`bg-gradient-to-br ${colors.cardGradient} border-0 shadow-lg`}>
+        <Card className={`${
+          isDarkMode 
+            ? 'bg-gray-800/50 border-gray-700' 
+            : `bg-gradient-to-br ${colors.cardGradient} border-0`
+        } shadow-lg`}>
           <CardHeader className="text-center pb-4">
-            <CardTitle className={`flex items-center justify-center text-2xl text-${colors.textColor}`}>
+            <CardTitle className={`flex items-center justify-center text-2xl ${
+              isDarkMode ? 'text-white' : `text-${colors.textColor}`
+            }`}>
               <BarChart3 className="mr-2" size={24} />
               Study Analytics
             </CardTitle>
-            <p className={`text-${colors.textColor} mt-2 opacity-80`}>
+            <p className={`${
+              isDarkMode ? 'text-gray-300' : `text-${colors.textColor}`
+            } mt-2 opacity-80`}>
               Advanced insights into your learning journey
             </p>
           </CardHeader>
@@ -139,8 +152,12 @@ const StudyAnalytics = () => {
                   onClick={() => setSelectedTimeframe(timeframe)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                     selectedTimeframe === timeframe
-                      ? `bg-gradient-to-r ${colors.headerGradient} text-white`
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? isDarkMode
+                        ? 'bg-blue-600 text-white'
+                        : `bg-gradient-to-r ${colors.headerGradient} text-white`
+                      : isDarkMode
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
@@ -151,40 +168,136 @@ const StudyAnalytics = () => {
         </Card>
       </motion.div>
 
-      {/* Overview Stats */}
+      {/* Level Widget - Now in Stats */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="shadow-lg">
+        <Card className={`${
+          isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
+        } shadow-lg`}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center space-x-4">
+              <div className="relative">
+                <Crown size={48} className="text-yellow-500" />
+                <div className="absolute -top-2 -right-2 bg-yellow-400 text-black font-bold rounded-full w-8 h-8 flex items-center justify-center text-lg">
+                  {userStats.level}
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-yellow-400' : 'text-yellow-700'}`}>
+                  Level {userStats.level}
+                </h3>
+                <p className={`${isDarkMode ? 'text-yellow-300' : 'text-yellow-600'}`}>
+                  {userStats.totalPoints} XP Total
+                </p>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {userStats.streak} day streak • {userStats.sessionsCompleted} sessions
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Line Graph for Study Time */}
+      {dailyStats.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className={`${
+            isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white'
+          } shadow-lg`}>
+            <CardHeader>
+              <CardTitle className={`flex items-center text-lg ${
+                isDarkMode ? 'text-white' : 'text-gray-800'
+              }`}>
+                <TrendingUp className="mr-2" size={20} />
+                Study Time Trend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={dailyStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                      border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                      color: isDarkMode ? '#ffffff' : '#000000'
+                    }}
+                    formatter={(value, name) => [`${value} hours`, 'Study Time']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="hours" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Overview Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white'} shadow-lg`}>
           <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <TrendingUp className="mr-2" size={20} />
-              Overview Statistics
+            <CardTitle className={`flex items-center text-lg ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}>
+              <Target className="mr-2" size={20} />
+              Performance Overview
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-xl">
-                <Award className="mx-auto mb-2 text-blue-600" size={24} />
-                <p className="text-2xl font-bold text-blue-600">{userStats.level}</p>
-                <p className="text-sm text-gray-600">Current Level</p>
+              <div className={`text-center p-4 rounded-xl ${
+                isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'
+              }`}>
+                <Clock className={`mx-auto mb-2 ${
+                  isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                }`} size={24} />
+                <p className={`text-2xl font-bold ${
+                  isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                }`}>{Math.round(userStats.totalStudyTime / 60)}</p>
+                <p className={`text-sm ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>Hours Studied</p>
               </div>
-              <div className="text-center p-4 bg-green-50 rounded-xl">
-                <Target className="mx-auto mb-2 text-green-600" size={24} />
-                <p className="text-2xl font-bold text-green-600">{userStats.totalPoints}</p>
-                <p className="text-sm text-gray-600">Total Points</p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-xl">
-                <Clock className="mx-auto mb-2 text-purple-600" size={24} />
-                <p className="text-2xl font-bold text-purple-600">{userStats.sessionsCompleted}</p>
-                <p className="text-sm text-gray-600">Sessions Done</p>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-xl">
-                <Brain className="mx-auto mb-2 text-orange-600" size={24} />
-                <p className="text-2xl font-bold text-orange-600">{productivityScore}</p>
-                <p className="text-sm text-gray-600">Productivity Score</p>
+              <div className={`text-center p-4 rounded-xl ${
+                isDarkMode ? 'bg-green-900/30' : 'bg-green-50'
+              }`}>
+                <Target className={`mx-auto mb-2 ${
+                  isDarkMode ? 'text-green-400' : 'text-green-600'
+                }`} size={24} />
+                <p className={`text-2xl font-bold ${
+                  isDarkMode ? 'text-green-400' : 'text-green-600'
+                }`}>{productivityScore}</p>
+                <p className={`text-sm ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>Productivity Score</p>
               </div>
             </div>
           </CardContent>
@@ -196,7 +309,7 @@ const StudyAnalytics = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.4 }}
         >
           <Card className="shadow-lg">
             <CardHeader>
@@ -227,7 +340,7 @@ const StudyAnalytics = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.5 }}
         >
           <Card className="shadow-lg">
             <CardHeader>
@@ -262,7 +375,7 @@ const StudyAnalytics = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.6 }}
       >
         <Card className="shadow-lg">
           <CardHeader>
@@ -293,13 +406,15 @@ const StudyAnalytics = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.7 }}
       >
-        <Card className="shadow-lg">
+        <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white'} shadow-lg`}>
           <CardHeader>
-            <CardTitle className="flex items-center text-lg">
+            <CardTitle className={`flex items-center text-lg ${
+              isDarkMode ? 'text-white' : 'text-gray-800'
+            }`}>
               <Award className="mr-2" size={20} />
-              Achievements
+              Recent Achievements
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -307,20 +422,32 @@ const StudyAnalytics = () => {
               {achievements.slice(0, 6).map((achievement, index) => (
                 <div 
                   key={achievement.id} 
-                  className={`p-4 rounded-xl border-2 ${
+                  className={`p-4 rounded-xl border-2 transition-all ${
                     achievement.unlocked 
-                      ? 'bg-yellow-50 border-yellow-200' 
-                      : 'bg-gray-50 border-gray-200'
+                      ? isDarkMode
+                        ? 'bg-yellow-900/30 border-yellow-600'
+                        : 'bg-yellow-50 border-yellow-200'
+                      : isDarkMode
+                        ? 'bg-gray-700/50 border-gray-600'
+                        : 'bg-gray-50 border-gray-200'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <span className="text-2xl">{achievement.icon}</span>
                       <div>
-                        <h3 className={`font-semibold ${achievement.unlocked ? 'text-yellow-700' : 'text-gray-500'}`}>
+                        <h3 className={`font-semibold ${
+                          achievement.unlocked 
+                            ? isDarkMode ? 'text-yellow-400' : 'text-yellow-700'
+                            : isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
                           {achievement.title}
                         </h3>
-                        <p className={`text-sm ${achievement.unlocked ? 'text-yellow-600' : 'text-gray-400'}`}>
+                        <p className={`text-sm ${
+                          achievement.unlocked 
+                            ? isDarkMode ? 'text-yellow-300' : 'text-yellow-600'
+                            : isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                        }`}>
                           {achievement.description}
                         </p>
                       </div>

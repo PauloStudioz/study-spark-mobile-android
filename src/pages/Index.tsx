@@ -55,13 +55,21 @@ const AppContent = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${colors.gradient} transition-all duration-300`}>
+    <div className={`min-h-screen transition-all duration-300 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : `bg-gradient-to-br ${colors.gradient}`
+    }`}>
       <div className={`max-w-md mx-auto shadow-2xl min-h-screen relative transition-all duration-300 ${
         isDarkMode 
-          ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
-          : 'bg-white'
+          ? 'bg-gray-800/80 backdrop-blur-sm' 
+          : 'bg-white/90 backdrop-blur-sm'
       }`}>
-        <header className={`bg-gradient-to-r ${colors.headerGradient} text-white p-4 rounded-b-3xl shadow-lg relative`}>
+        <header className={`${
+          isDarkMode 
+            ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600' 
+            : `bg-gradient-to-r ${colors.headerGradient}`
+        } text-white p-4 rounded-b-3xl shadow-lg relative`}>
           <motion.h1 
             className="text-2xl font-bold text-center"
             initial={{ opacity: 0, y: -20 }}
@@ -93,7 +101,7 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className={`p-4 pb-36 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
+        <main className={`p-4 pb-40 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, x: 20 }}

@@ -11,7 +11,7 @@ interface NavigationProps {
 }
 
 const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
-  const { getThemeColors } = useTheme();
+  const { getThemeColors, isDarkMode } = useTheme();
   const colors = getThemeColors();
 
   const navItems = [
@@ -32,7 +32,11 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
   const bottomRow = navItems.slice(5, 10);
 
   return (
-    <nav className={`fixed bottom-0 left-0 right-0 bg-gradient-to-r ${colors.headerGradient} p-2 shadow-lg rounded-t-2xl max-w-md mx-auto`}>
+    <nav className={`fixed bottom-0 left-0 right-0 ${
+      isDarkMode 
+        ? 'bg-gray-800/95 border-t border-gray-700' 
+        : `bg-gradient-to-r ${colors.headerGradient}`
+    } p-2 shadow-lg rounded-t-2xl max-w-md mx-auto backdrop-blur-sm`}>
       {/* Top Row */}
       <div className="grid grid-cols-5 gap-1 mb-1">
         {topRow.map((item) => {
@@ -45,20 +49,28 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
               onClick={() => setActiveTab(item.id)}
               variant="ghost"
               size="sm"
-              className={`flex flex-col items-center space-y-1 p-2 min-w-0 relative h-14 ${
-                isActive ? 'text-white' : 'text-white/70 hover:text-white'
+              className={`flex flex-col items-center justify-center space-y-1 p-2 min-w-0 relative h-16 transition-all duration-200 ${
+                isActive 
+                  ? isDarkMode 
+                    ? 'text-blue-400 bg-blue-900/30' 
+                    : 'text-white bg-white/20'
+                  : isDarkMode 
+                    ? 'text-gray-300 hover:text-blue-400 hover:bg-gray-700/50' 
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 bg-white/20 rounded-lg"
+                  className={`absolute inset-0 ${
+                    isDarkMode ? 'bg-blue-500/20' : 'bg-white/20'
+                  } rounded-lg`}
                   initial={false}
                   transition={{ duration: 0.2 }}
                 />
               )}
-              <Icon size={14} className="relative z-10" />
-              <span className="text-xs font-medium relative z-10 truncate">
+              <Icon size={18} className="relative z-10 mb-1" />
+              <span className="text-xs font-medium relative z-10 truncate leading-tight">
                 {item.label}
               </span>
             </Button>
@@ -78,20 +90,28 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
               onClick={() => setActiveTab(item.id)}
               variant="ghost"
               size="sm"
-              className={`flex flex-col items-center space-y-1 p-2 min-w-0 relative h-14 ${
-                isActive ? 'text-white' : 'text-white/70 hover:text-white'
+              className={`flex flex-col items-center justify-center space-y-1 p-2 min-w-0 relative h-16 transition-all duration-200 ${
+                isActive 
+                  ? isDarkMode 
+                    ? 'text-blue-400 bg-blue-900/30' 
+                    : 'text-white bg-white/20'
+                  : isDarkMode 
+                    ? 'text-gray-300 hover:text-blue-400 hover:bg-gray-700/50' 
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
               }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="activeTab2"
-                  className="absolute inset-0 bg-white/20 rounded-lg"
+                  className={`absolute inset-0 ${
+                    isDarkMode ? 'bg-blue-500/20' : 'bg-white/20'
+                  } rounded-lg`}
                   initial={false}
                   transition={{ duration: 0.2 }}
                 />
               )}
-              <Icon size={14} className="relative z-10" />
-              <span className="text-xs font-medium relative z-10 truncate">
+              <Icon size={18} className="relative z-10 mb-1" />
+              <span className="text-xs font-medium relative z-10 truncate leading-tight">
                 {item.label}
               </span>
             </Button>
