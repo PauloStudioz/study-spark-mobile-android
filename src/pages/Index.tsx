@@ -65,7 +65,7 @@ const AppContent = () => {
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
         : `bg-gradient-to-br ${colors.gradient}`
     }`}>
-      <div className={`max-w-md mx-auto shadow-2xl h-full flex flex-col relative transition-all duration-300 ${
+      <div className={`max-w-md w-full mx-auto shadow-2xl h-full flex flex-col relative transition-all duration-300 ${
         isDarkMode 
           ? 'bg-gray-800/80 backdrop-blur-sm' 
           : 'bg-white/90 backdrop-blur-sm'
@@ -106,9 +106,9 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className={`flex-1 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
-          <ScrollArea className="h-full">
-            <div className="p-4 pb-32">
+        <main className={`flex-1 overflow-hidden w-full ${isDarkMode ? 'text-white' : ''}`}>
+          <ScrollArea className="h-full w-full">
+            <div className="p-4 pb-32 w-full">
               <motion.div
                 key={activeTab}
                 initial={{ opacity: 0, x: 20 }}
@@ -122,7 +122,7 @@ const AppContent = () => {
           </ScrollArea>
         </main>
 
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 w-full">
           <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
         
