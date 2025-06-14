@@ -26,7 +26,7 @@ const QuoteOfDay = () => {
   const fetchQuote = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://api.quotable.io/random?tags=education,wisdom,success');
+      const response = await fetch('https://api.quotable.io/random?tags=education|inspirational');
       if (!response.ok) {
         throw new Error('Failed to fetch quote');
       }
@@ -36,7 +36,6 @@ const QuoteOfDay = () => {
         author: data.author
       });
     } catch (err) {
-      console.log('API failed, using fallback quote');
       const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
       setQuote(randomQuote);
     } finally {
@@ -70,8 +69,8 @@ const QuoteOfDay = () => {
   };
 
   return (
-    <div className="flex flex-col justify-center w-full">
-      <Card className={`w-full ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl`}>
+    <div className="flex flex-col justify-center w-full items-center">
+      <Card className={`w-full max-w-md ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl`}>
         <CardHeader className="text-center pb-2">
           <CardTitle className={`text-xl ${isDarkMode ? 'text-white' : 'text-gray-800'} flex items-center justify-center gap-2`}>
             <Quote size={24} className="text-blue-500" />
