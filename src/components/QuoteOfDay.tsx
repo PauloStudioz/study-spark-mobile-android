@@ -80,7 +80,7 @@ const QuoteOfDay = () => {
 
   if (isLoading) {
     return (
-      <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-6 h-full flex items-center justify-center`}>
+      <div className="flex items-center justify-center py-12">
         <div className="animate-spin">
           <RefreshCw size={32} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
         </div>
@@ -89,7 +89,7 @@ const QuoteOfDay = () => {
   }
 
   return (
-    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-6 h-full flex flex-col justify-center`}>
+    <div className="flex flex-col justify-center min-h-[400px]">
       <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl`}>
         <CardHeader className="text-center pb-2">
           <CardTitle className={`text-xl ${isDarkMode ? 'text-white' : 'text-gray-800'} flex items-center justify-center gap-2`}>

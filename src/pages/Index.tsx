@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings as SettingsIcon, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import PomodoroTimer from '../components/PomodoroTimer';
 import AdvancedMathSolver from '../components/AdvancedMathSolver';
 import Dictionary from '../components/Dictionary';
@@ -64,17 +65,17 @@ const AppContent = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-all duration-300 ${
+    <div className={`h-screen flex flex-col transition-all duration-300 ${
       isDarkMode 
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
         : `bg-gradient-to-br ${colors.gradient}`
     }`}>
-      <div className={`max-w-md mx-auto shadow-2xl min-h-screen relative transition-all duration-300 ${
+      <div className={`max-w-md mx-auto shadow-2xl h-full flex flex-col relative transition-all duration-300 ${
         isDarkMode 
           ? 'bg-gray-800/80 backdrop-blur-sm' 
           : 'bg-white/90 backdrop-blur-sm'
       }`}>
-        <header className={`${
+        <header className={`flex-shrink-0 ${
           isDarkMode 
             ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600' 
             : `bg-gradient-to-r ${colors.headerGradient}`
@@ -110,20 +111,26 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className={`p-4 pb-60 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="h-full"
-          >
-            {renderActiveComponent()}
-          </motion.div>
+        <main className={`flex-1 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
+          <ScrollArea className="h-full">
+            <div className="p-4 pb-6">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderActiveComponent()}
+              </motion.div>
+            </div>
+          </ScrollArea>
         </main>
 
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="flex-shrink-0">
+          <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
+        
         <Settings isOpen={showSettings} onClose={() => setShowSettings(false)} />
         <PWAInstaller />
         <FloatingWidgets />

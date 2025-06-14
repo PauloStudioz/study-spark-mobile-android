@@ -83,8 +83,8 @@ const GradeCalculator = () => {
   const overallGrade = calculateOverallGrade();
 
   return (
-    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-6 h-full`}>
-      <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl mb-6`}>
+    <div className="space-y-6">
+      <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl`}>
         <CardHeader className="text-center">
           <CardTitle className={`text-2xl ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             Grade Calculator
@@ -100,7 +100,7 @@ const GradeCalculator = () => {
         </CardHeader>
       </Card>
 
-      <div className="space-y-4 mb-6">
+      <div className="space-y-4">
         {grades.map(grade => {
           const percentage = (grade.score / grade.maxScore) * 100;
           return (

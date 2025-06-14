@@ -77,8 +77,8 @@ const HabitTracker = () => {
   };
 
   return (
-    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-6 h-full`}>
-      <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl mb-6`}>
+    <div className="space-y-6">
+      <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl`}>
         <CardHeader className="text-center">
           <CardTitle className={`text-2xl ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
             Daily Habits
@@ -89,7 +89,7 @@ const HabitTracker = () => {
         </CardHeader>
       </Card>
 
-      <div className="space-y-4 mb-6">
+      <div className="space-y-4">
         {habits.map(habit => {
           const isCompleted = habit.completedDates.includes(today);
           return (
