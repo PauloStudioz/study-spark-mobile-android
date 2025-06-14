@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings as SettingsIcon, Moon, Sun } from 'lucide-react';
@@ -49,12 +48,8 @@ const AppContent = () => {
         return <StudyAnalytics />;
       case 'notes':
         return <QuickNotes />;
-      case 'routine':
-        return <RoutineMaker />;
       case 'schedule':
         return <ScheduleMaker />;
-      case 'habits':
-        return <HabitTracker />;
       case 'grades':
         return <GradeCalculator />;
       case 'quote':
@@ -113,7 +108,7 @@ const AppContent = () => {
 
         <main className={`flex-1 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
           <ScrollArea className="h-full">
-            <div className="p-4 pb-6">
+            <div className="p-4 pb-32">
               <motion.div
                 key={activeTab}
                 initial={{ opacity: 0, x: 20 }}

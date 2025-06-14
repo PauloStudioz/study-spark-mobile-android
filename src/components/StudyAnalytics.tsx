@@ -3,7 +3,7 @@ import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
 import { Card, CardContent } from "@/components/ui/card";
-import { Flame, Calendar, Trophy } from "lucide-react";
+import { Calendar, Trophy, Star, TrendingUp } from "lucide-react";
 
 const StudyAnalytics = () => {
   const { isDarkMode } = useTheme();
@@ -34,39 +34,69 @@ const StudyAnalytics = () => {
     return 'from-gray-400 to-gray-500';
   };
 
+  const nextLevelXP = (userStats.level + 1) * 100;
+  const currentLevelXP = userStats.level * 100;
+  const progressToNextLevel = ((userStats.xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+
   return (
-    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-6 h-full flex flex-col justify-center items-center space-y-6`}>
-      {/* Main Streak Display */}
-      <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl w-full max-w-sm`}>
-        <CardContent className="p-8 text-center">
-          <div className="mb-6">
-            <div className="text-6xl mb-2">
+    <div className="space-y-6">
+      {/* Level Card - Made more prominent */}
+      <Card className={`${isDarkMode ? 'bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-purple-700' : 'bg-gradient-to-r from-purple-100 to-blue-100 border-purple-200'} shadow-xl`}>
+        <CardContent className="p-6 text-center">
+          <div className="mb-4">
+            <Star className={`mx-auto mb-2 ${isDarkMode ? 'text-yellow-400' : 'text-yellow-500'}`} size={32} />
+            <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-1`}>
+              Level {userStats.level}
+            </h2>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              {userStats.xp} / {nextLevelXP} XP
+            </p>
+          </div>
+          
+          {/* XP Progress Bar */}
+          <div className="w-full bg-gray-300 rounded-full h-3 mb-2 overflow-hidden">
+            <div 
+              className={`bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full transition-all duration-500`}
+              style={{ width: `${Math.max(5, progressToNextLevel)}%` }}
+            />
+          </div>
+          
+          <p className={`text-xs ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+            {Math.round(progressToNextLevel)}% to next level
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Streak Card */}
+      <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl`}>
+        <CardContent className="p-6 text-center">
+          <div className="mb-4">
+            <div className="text-4xl mb-2">
               {getStreakEmoji(userStats.streak)}
             </div>
-            <h2 className={`text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-2`}>
+            <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'} mb-1`}>
               {userStats.streak}
             </h2>
-            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Day Streak
             </p>
           </div>
           
-          {/* Progress Bar */}
-          <div className="w-full bg-gray-300 rounded-full h-2 mb-4 overflow-hidden">
+          <div className="w-full bg-gray-300 rounded-full h-2 mb-3 overflow-hidden">
             <div 
               className={`bg-gradient-to-r ${getStreakColor(userStats.streak)} h-2 rounded-full transition-all duration-500`}
               style={{ width: `${Math.min(100, (userStats.streak / 30) * 100)}%` }}
             />
           </div>
           
-          <p className={`text-sm font-medium ${isDarkMode ? 'text-yellow-400' : 'text-orange-600'}`}>
+          <p className={`text-xs font-medium ${isDarkMode ? 'text-yellow-400' : 'text-orange-600'}`}>
             {getMotivationalMessage(userStats.streak)}
           </p>
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-4">
         <Card className={`${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-white/80 border-gray-200'} shadow-lg`}>
           <CardContent className="p-4 text-center">
             <Calendar className="text-blue-500 mx-auto mb-2" size={24} />
@@ -79,20 +109,13 @@ const StudyAnalytics = () => {
         
         <Card className={`${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-white/80 border-gray-200'} shadow-lg`}>
           <CardContent className="p-4 text-center">
-            <Trophy className="text-green-500 mx-auto mb-2" size={24} />
-            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Level</p>
+            <TrendingUp className="text-green-500 mx-auto mb-2" size={24} />
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total XP</p>
             <p className={`text-xl font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-              {userStats.level}
+              {userStats.xp}
             </p>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Next Milestone */}
-      <div className="text-center">
-        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Next milestone: {userStats.streak < 7 ? '7 days' : userStats.streak < 14 ? '14 days' : userStats.streak < 30 ? '30 days' : 'Keep going!'}
-        </p>
       </div>
     </div>
   );
