@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Clock, Target, Award, Calendar, Brain, Crown } from 'lucide-react';
@@ -120,7 +121,7 @@ const StudyAnalytics = () => {
   const productivityScore = getProductivityScore();
 
   return (
-    <div className="w-full h-screen max-h-screen flex flex-col bg-white dark:bg-gray-950 overflow-hidden">
+    <div className="w-full flex-1 flex flex-col bg-white dark:bg-gray-950 overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 pb-24">
         <div className="space-y-4 max-w-4xl mx-auto">
           <motion.div
