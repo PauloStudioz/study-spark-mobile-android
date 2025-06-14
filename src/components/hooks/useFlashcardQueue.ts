@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { Flashcard, ReviewGrade } from "@/components/FlashcardStudy";
+import { Flashcard } from "@/components/FlashcardStudy";
+import { ReviewGrade } from "@/utils/ankiScheduler";
 
 export function useFlashcardQueue(flashcards: Flashcard[]) {
   const now = new Date();
