@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Calculator, StickyNote, Timer, X, Minus, Plus } from 'lucide-react';
+import { Zap, Calculator, StickyNote, Timer, X, Minus, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ const FloatingWidgets = () => {
   const [previousValue, setPreviousValue] = useState<number | null>(null);
   const [operation, setOperation] = useState<string | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
+  const [expression, setExpression] = useState('');
 
   // Notes state
   const [notes, setNotes] = useState(() => {
@@ -41,9 +43,16 @@ const FloatingWidgets = () => {
   const handleNumberClick = (number: string) => {
     if (waitingForOperand) {
       setDisplay(number);
+      setExpression(prev => prev + number);
       setWaitingForOperand(false);
     } else {
-      setDisplay(display === '0' ? number : display + number);
+      const newDisplay = display === '0' ? number : display + number;
+      setDisplay(newDisplay);
+      if (expression === '0') {
+        setExpression(number);
+      } else {
+        setExpression(prev => prev + number);
+      }
     }
   };
 
@@ -58,12 +67,14 @@ const FloatingWidgets = () => {
 
     setWaitingForOperand(true);
     setOperation(op);
+    setExpression(prev => prev + ` ${op} `);
   };
 
   const handleEqualsClick = () => {
     if (operation) {
       const result = performCalculation();
       setDisplay(String(result));
+      setExpression(prev => prev + ` = ${result}`);
       setPreviousValue(null);
       setOperation(null);
       setWaitingForOperand(false);
@@ -75,11 +86,14 @@ const FloatingWidgets = () => {
     setPreviousValue(null);
     setOperation(null);
     setWaitingForOperand(false);
+    setExpression('');
   };
 
   const handleDecimalClick = () => {
     if (!display.includes('.')) {
-      setDisplay(display + '.');
+      const newDisplay = display + '.';
+      setDisplay(newDisplay);
+      setExpression(prev => prev + '.');
     }
   };
 
@@ -166,21 +180,21 @@ const FloatingWidgets = () => {
 
   return (
     <>
-      {/* Main Quick Access Button - Centered Lightning */}
+      {/* Main Quick Access Button - Now centered in bottom navigation */}
       <motion.div
-        className="fixed bottom-24 right-6 z-50"
+        className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-50"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
       >
         <Button
           onClick={() => setShowQuickAccess(!showQuickAccess)}
-          className={`w-16 h-16 rounded-full shadow-2xl border-2 ${
+          className={`w-14 h-14 rounded-full shadow-xl border-2 ${
             isDarkMode
               ? 'bg-gradient-to-r from-blue-600 to-purple-600 border-blue-400 hover:from-blue-700 hover:to-purple-700'
               : 'bg-gradient-to-r from-blue-500 to-purple-500 border-blue-300 hover:from-blue-600 hover:to-purple-600'
           } transition-all duration-300`}
         >
-          <Zap size={28} className="text-white relative z-10" />
+          <Zap size={24} className="text-white relative z-10" />
           {/* Pulsing effect */}
           <div className="absolute inset-0 rounded-full bg-blue-400 opacity-30 animate-ping" />
         </Button>
@@ -194,25 +208,25 @@ const FloatingWidgets = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-44 right-6 z-40"
+            className="fixed bottom-48 left-1/2 transform -translate-x-1/2 z-40"
           >
             <Card className={`${
               isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
             } backdrop-blur-sm shadow-2xl`}>
               <CardContent className="p-4">
-                <div className="flex flex-col space-y-3">
+                <div className="flex space-x-3">
                   <Button
                     onClick={() => {
                       setShowCalculator(true);
                       setShowQuickAccess(false);
                     }}
                     variant="ghost"
-                    className={`flex items-center space-x-2 justify-start ${
+                    className={`flex flex-col items-center space-y-1 p-3 ${
                       isDarkMode ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100'
                     }`}
                   >
                     <Calculator size={20} />
-                    <span>Calculator</span>
+                    <span className="text-xs">Calc</span>
                   </Button>
                   <Button
                     onClick={() => {
@@ -220,12 +234,12 @@ const FloatingWidgets = () => {
                       setShowQuickAccess(false);
                     }}
                     variant="ghost"
-                    className={`flex items-center space-x-2 justify-start ${
+                    className={`flex flex-col items-center space-y-1 p-3 ${
                       isDarkMode ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100'
                     }`}
                   >
                     <StickyNote size={20} />
-                    <span>Quick Notes</span>
+                    <span className="text-xs">Notes</span>
                   </Button>
                   <Button
                     onClick={() => {
@@ -233,12 +247,12 @@ const FloatingWidgets = () => {
                       setShowQuickAccess(false);
                     }}
                     variant="ghost"
-                    className={`flex items-center space-x-2 justify-start ${
+                    className={`flex flex-col items-center space-y-1 p-3 ${
                       isDarkMode ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100'
                     }`}
                   >
                     <Timer size={20} />
-                    <span>Mini Timer</span>
+                    <span className="text-xs">Timer</span>
                   </Button>
                 </div>
               </CardContent>
@@ -259,18 +273,25 @@ const FloatingWidgets = () => {
           >
             <Card className={`${
               isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
-            } backdrop-blur-sm shadow-2xl`}>
+            } backdrop-blur-sm shadow-2xl w-72`}>
               <CardContent className="p-4">
-                <div className="text-right text-3xl font-bold mb-2">{display}</div>
+                <div className="mb-3">
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-1 h-6 overflow-hidden`}>
+                    {expression || ''}
+                  </div>
+                  <div className={`text-right text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                    {display}
+                  </div>
+                </div>
                 <div className="grid grid-cols-4 gap-2">
-                  <Button onClick={handleClearClick} variant="outline">
+                  <Button onClick={handleClearClick} variant="outline" className="bg-red-100 hover:bg-red-200">
                     C
                   </Button>
                   <Button onClick={() => handleOperationClick('/')} variant="outline">
-                    /
+                    ÷
                   </Button>
                   <Button onClick={() => handleOperationClick('*')} variant="outline">
-                    *
+                    ×
                   </Button>
                   <Button
                     onClick={() => setShowCalculator(false)}
@@ -312,7 +333,7 @@ const FloatingWidgets = () => {
                   <Button onClick={() => handleNumberClick('3')} variant="ghost">
                     3
                   </Button>
-                  <Button onClick={handleEqualsClick} variant="outline" className="row-span-2">
+                  <Button onClick={handleEqualsClick} variant="outline" className="row-span-2 bg-blue-100 hover:bg-blue-200">
                     =
                   </Button>
                   <Button onClick={() => handleNumberClick('0')} variant="ghost" className="col-span-2">
@@ -352,10 +373,13 @@ const FloatingWidgets = () => {
                     <X size={20} />
                   </Button>
                 </div>
-                <Input
-                  as="textarea"
+                <textarea
                   placeholder="Write your notes here..."
-                  className="rounded-md h-48 resize-none"
+                  className={`w-full h-48 p-3 rounded-md border resize-none ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                      : 'bg-white border-gray-300 text-gray-800 placeholder-gray-500'
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   value={notes}
                   onChange={handleNotesChange}
                 />
@@ -419,8 +443,10 @@ const FloatingWidgets = () => {
                   <Input
                     type="number"
                     value={miniTimerMinutes}
-                    onChange={(e) => setMiniTimerMinutes(parseInt(e.target.value))}
+                    onChange={(e) => setMiniTimerMinutes(parseInt(e.target.value) || 0)}
                     className="w-16 text-sm rounded-md"
+                    min="0"
+                    max="60"
                   />
                 </div>
               </CardContent>

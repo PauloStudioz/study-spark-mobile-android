@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Clock, Target, Award, Calendar, Brain, Crown } from 'lucide-react';
@@ -217,39 +216,44 @@ const StudyAnalytics = () => {
                 isDarkMode ? 'text-white' : 'text-gray-800'
               }`}>
                 <TrendingUp className="mr-2" size={20} />
-                Study Time Trend
+                Study Time Trend (Last 7 Days)
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="h-64">
+              <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dailyStats}>
+                  <LineChart data={dailyStats} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
                     <XAxis 
                       dataKey="date" 
                       stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
                       fontSize={12}
+                      tick={{ fontSize: 12 }}
                     />
                     <YAxis 
                       stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
                       fontSize={12}
+                      tick={{ fontSize: 12 }}
+                      label={{ value: 'Hours', angle: -90, position: 'insideLeft' }}
                     />
                     <Tooltip 
                       contentStyle={{
                         backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
                         border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
                         borderRadius: '8px',
-                        color: isDarkMode ? '#ffffff' : '#000000'
+                        color: isDarkMode ? '#ffffff' : '#000000',
+                        fontSize: '14px'
                       }}
                       formatter={(value, name) => [`${value} hours`, 'Study Time']}
+                      labelFormatter={(label) => `Date: ${label}`}
                     />
                     <Line 
                       type="monotone" 
                       dataKey="hours" 
-                      stroke="#3b82f6" 
+                      stroke={isDarkMode ? '#60a5fa' : '#3b82f6'}
                       strokeWidth={3}
-                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                      dot={{ fill: isDarkMode ? '#60a5fa' : '#3b82f6', strokeWidth: 2, r: 5 }}
+                      activeDot={{ r: 7, stroke: isDarkMode ? '#60a5fa' : '#3b82f6', strokeWidth: 2 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -314,19 +318,21 @@ const StudyAnalytics = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Card className="shadow-lg">
+          <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white'} shadow-lg`}>
             <CardHeader>
-              <CardTitle className="text-lg">Subject Breakdown</CardTitle>
+              <CardTitle className={`text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>Subject Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {subjectStats.map((stat, index) => (
-                  <div key={stat.subject} className="p-4 bg-gray-50 rounded-xl">
+                  <div key={stat.subject} className={`p-4 rounded-xl ${
+                    isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                  }`}>
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-semibold text-gray-800">{stat.subject}</h3>
+                      <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>{stat.subject}</h3>
                       <Badge variant="secondary">{stat.totalTime}m total</Badge>
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
+                    <div className={`flex justify-between text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                       <span>{stat.sessions} sessions</span>
                       <span>Avg: {stat.averageSession}m</span>
                     </div>
@@ -345,26 +351,28 @@ const StudyAnalytics = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="shadow-lg">
+          <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white'} shadow-lg`}>
             <CardHeader>
-              <CardTitle className="flex items-center text-lg">
+              <CardTitle className={`flex items-center text-lg ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                 <Calendar className="mr-2" size={20} />
                 Daily Activity
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {dailyStats.map(([date, minutes]) => (
-                  <div key={date} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium text-gray-700">{date}</span>
+                {dailyStats.map((day) => (
+                  <div key={day.date} className={`flex items-center justify-between p-3 rounded-lg ${
+                    isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+                  }`}>
+                    <span className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>{day.date}</span>
                     <div className="flex items-center space-x-3">
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div className={`w-24 rounded-full h-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-200'}`}>
                         <div 
                           className={`bg-gradient-to-r ${colors.headerGradient} h-2 rounded-full`}
-                          style={{ width: `${Math.min((minutes / 120) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((day.minutes / 120) * 100, 100)}%` }}
                         />
                       </div>
-                      <span className="text-sm font-medium text-gray-600">{minutes}m</span>
+                      <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{day.minutes}m</span>
                     </div>
                   </div>
                 ))}
