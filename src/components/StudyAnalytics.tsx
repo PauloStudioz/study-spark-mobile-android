@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
@@ -105,8 +106,8 @@ const StudyAnalytics = () => {
   const productivityScore = getProductivityScore();
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-4 pb-4">
+    <div className={`${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50'} rounded-2xl p-4 h-full overflow-hidden flex flex-col`}>
+      <div className="flex-1 overflow-y-auto space-y-4">
         <StudyAnalyticsContent
           subjectStats={subjectStats}
           dailyStats={dailyStats}
