@@ -64,14 +64,16 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
       }
     >
       {/* Main or More-tabbed row */}
-      <div className={`grid grid-cols-${navTabs.length} gap-1 w-full`}>
+      <div
+        className={`flex flex-row gap-1 w-full justify-center`}
+      >
         {navTabs.map((item) => {
           const Icon = item.icon;
+          // Only highlight for main tabs (as per your last behavior)
           const isActive = !showMoreTabs
             ? activeTab === item.id
-            : false; // Only highlight active in main set
+            : false;
 
-          // Handle More/Back buttons
           const isSpecial =
             (!showMoreTabs && item.id === "more") ||
             (showMoreTabs && item.id === "back");
@@ -86,7 +88,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                   setShowMoreTabs(false);
                 } else if (!isSpecial) {
                   setActiveTab(item.id);
-                  setShowMoreTabs(false); // always go back to main after secondary feature chosen
+                  setShowMoreTabs(false);
                 }
               }}
               variant="ghost"
@@ -122,4 +124,3 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
 };
 
 export default Navigation;
-
