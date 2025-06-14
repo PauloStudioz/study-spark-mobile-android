@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTheme } from '@/contexts/ThemeContext';
+import SubjectCard from "./SubjectCard";
 
 interface Grade {
   id: string;
@@ -192,111 +193,19 @@ const GradeCalculator = () => {
 
       <div className="flex flex-wrap gap-3">
         {subjects.map(subject => (
-          <Card key={subject.id} className={`relative min-w-[220px] flex-1 ${isDarkMode ? 'bg-gray-800/30 border-gray-700' : 'bg-white/80 border-gray-200'} shadow-lg`}>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle
-                  className={`text-lg truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}
-                >
-                  {subject.name}
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2"
-                    title="Add assignment"
-                    onClick={() => {
-                      // Focus/flicker (no hiding/showing needed now)
-                      document.getElementById(`add-draft-${subject.id}`)?.scrollIntoView({behavior: 'smooth', block: 'center'});
-                    }}
-                  >
-                    <Plus size={18} />
-                  </Button>
-                  <Button
-                    onClick={() => removeSubject(subject.id)}
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2"
-                    title="Remove subject"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-1 mb-1">
-                <span className={`font-semibold ${getGradeColor(calculateSubjectFinal(subject))}`}>
-                  {calculateSubjectFinal(subject).toFixed(1)}% {getLetterGrade(calculateSubjectFinal(subject))}
-                </span>
-              </div>
-            </CardHeader>
-            {/* Grade list for subject */}
-            <CardContent>
-              <div className="space-y-1">
-                {subject.grades.map(grade => {
-                  const percentage = (grade.score / grade.maxScore) * 100;
-                  return (
-                    <div key={grade.id} className="flex justify-between items-center px-2 py-1 rounded">
-                      <div className="flex flex-col flex-1">
-                        <span className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                          {grade.name}
-                        </span>
-                        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {grade.score}/{grade.maxScore} • {grade.weight}%
-                          <span className={`ml-1 font-medium ${getGradeColor(percentage)}`}> {percentage.toFixed(1)}%</span>
-                        </span>
-                      </div>
-                      <Button
-                        onClick={() => removeGrade(subject.id, grade.id)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 ml-1"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Assignment draft for this subject: always visible, does not hide after add */}
-              <div className="space-y-2 pt-2 border-t border-gray-300/10 mt-4" id={`add-draft-${subject.id}`}>
-                <Input
-                  placeholder="Assignment name"
-                  value={assignmentDrafts[subject.id]?.name || ""}
-                  onChange={e => handleDraftChange(subject.id, "name", e.target.value)}
-                  className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                />
-                <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    placeholder="Score"
-                    type="number"
-                    value={assignmentDrafts[subject.id]?.score || ""}
-                    onChange={e => handleDraftChange(subject.id, "score", e.target.value)}
-                    className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                  />
-                  <Input
-                    placeholder="Max Score"
-                    type="number"
-                    value={assignmentDrafts[subject.id]?.maxScore || ""}
-                    onChange={e => handleDraftChange(subject.id, "maxScore", e.target.value)}
-                    className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                  />
-                  <Input
-                    placeholder="Weight %"
-                    type="number"
-                    value={assignmentDrafts[subject.id]?.weight || ""}
-                    onChange={e => handleDraftChange(subject.id, "weight", e.target.value)}
-                    className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                  />
-                </div>
-                {/* Add disables if fields missing */}
-                <Button onClick={() => addGrade(subject.id)} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-                  <Plus size={20} className="mr-2" />
-                  Add Assignment
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <SubjectCard
+            key={subject.id}
+            subject={subject}
+            draft={assignmentDrafts[subject.id] || { name: '', score: '', maxScore: '', weight: '' }}
+            onDraftChange={(field, value) => handleDraftChange(subject.id, field, value)}
+            onAddGrade={() => addGrade(subject.id)}
+            onRemoveGrade={(gradeId) => removeGrade(subject.id, gradeId)}
+            onRemoveSubject={() => removeSubject(subject.id)}
+            isDarkMode={isDarkMode}
+            calculateSubjectFinal={calculateSubjectFinal}
+            getGradeColor={getGradeColor}
+            getLetterGrade={getLetterGrade}
+          />
         ))}
       </div>
     </div>
