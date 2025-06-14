@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { generateFlashcardsFromText } from '@/utils/geminiApi';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useGamification } from '@/contexts/GamificationContext';
 
 interface Flashcard {
   id: string;
@@ -25,6 +27,10 @@ interface Deck {
 }
 
 const Flashcards = () => {
+  const { getThemeColors, isDarkMode } = useTheme();
+  const colors = getThemeColors();
+  const { reviewFlashcard } = useGamification();
+  
   const [decks, setDecks] = useState<Deck[]>([]);
   const [currentDeck, setCurrentDeck] = useState<Deck | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -61,7 +67,6 @@ const Flashcards = () => {
     const savedDecks = localStorage.getItem('studymate-decks');
     if (savedDecks) {
       const parsed = JSON.parse(savedDecks);
-      // Convert date strings back to Date objects
       const decksWithDates = parsed.map((deck: Deck) => ({
         ...deck,
         cards: deck.cards.map(card => ({
@@ -71,7 +76,6 @@ const Flashcards = () => {
       }));
       setDecks(decksWithDates);
     } else {
-      // Create a sample deck
       const sampleDeck: Deck = {
         id: '1',
         name: 'Sample Deck',
@@ -283,7 +287,9 @@ const Flashcards = () => {
     setCurrentDeck(updatedDeck);
     saveDecks(updatedDecks);
     
-    // Auto advance to next card
+    // Award points based on difficulty
+    reviewFlashcard(difficulty);
+    
     setTimeout(() => {
       nextCard();
     }, 500);
@@ -315,7 +321,11 @@ const Flashcards = () => {
           transition={{ duration: 0.3 }}
         >
           <Card 
-            className="h-96 cursor-pointer shadow-2xl bg-gradient-to-br from-blue-50 to-purple-50 border-0"
+            className={`h-96 cursor-pointer shadow-2xl border-0 ${
+              isDarkMode 
+                ? 'bg-gradient-to-br from-gray-800 to-gray-700' 
+                : 'bg-gradient-to-br from-blue-50 to-purple-50'
+            }`}
             onClick={() => setShowBack(!showBack)}
           >
             <CardContent className="h-full flex items-center justify-center p-8">
@@ -333,11 +343,13 @@ const Flashcards = () => {
                       {showBack ? 'Answer' : 'Question'}
                     </Badge>
                   </div>
-                  <p className="text-lg leading-relaxed text-gray-800">
+                  <p className={`text-lg leading-relaxed ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
                     {showBack ? currentCard.back : currentCard.front}
                   </p>
                   {!showBack && (
-                    <p className="text-sm text-gray-500 mt-6">Tap to reveal answer</p>
+                    <p className={`text-sm mt-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Tap to reveal answer
+                    </p>
                   )}
                 </motion.div>
               </AnimatePresence>
@@ -351,25 +363,27 @@ const Flashcards = () => {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
           >
-            <p className="text-center text-gray-600">How difficult was this card?</p>
+            <p className={`text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              How difficult was this card?
+            </p>
             <div className="flex justify-center space-x-3">
               <Button
                 onClick={() => markDifficulty('easy')}
                 className="bg-green-500 hover:bg-green-600 rounded-xl px-6"
               >
-                Easy
+                Easy (+10 XP)
               </Button>
               <Button
                 onClick={() => markDifficulty('medium')}
                 className="bg-yellow-500 hover:bg-yellow-600 rounded-xl px-6"
               >
-                Medium
+                Medium (+7 XP)
               </Button>
               <Button
                 onClick={() => markDifficulty('hard')}
                 className="bg-red-500 hover:bg-red-600 rounded-xl px-6"
               >
-                Hard
+                Hard (+3 XP)
               </Button>
             </div>
           </motion.div>

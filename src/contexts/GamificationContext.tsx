@@ -18,7 +18,9 @@ export interface UserStats {
   sessionsCompleted: number;
   tasksCompleted: number;
   flashcardsReviewed: number;
-  totalStudyTime: number; // in minutes
+  totalStudyTime: number;
+  quizQuestionsCorrect: number;
+  routinesCompleted: number;
 }
 
 interface GamificationContextType {
@@ -27,9 +29,12 @@ interface GamificationContextType {
   addPoints: (points: number, activity: string) => void;
   completeSession: () => void;
   completeTask: () => void;
-  reviewFlashcard: () => void;
+  reviewFlashcard: (difficulty: 'easy' | 'medium' | 'hard') => void;
+  correctQuizAnswer: () => void;
+  completeRoutine: () => void;
   addStudyTime: (minutes: number) => void;
   resetStats: () => void;
+  showNotification: (message: string) => void;
 }
 
 const defaultAchievements: Achievement[] = [
@@ -74,11 +79,19 @@ const defaultAchievements: Achievement[] = [
     unlocked: false
   },
   {
-    id: 'marathon-runner',
-    title: 'Marathon Runner',
-    description: 'Study for 8 hours total',
-    icon: '🏃',
-    points: 200,
+    id: 'quiz-champion',
+    title: 'Quiz Champion',
+    description: 'Answer 50 quiz questions correctly',
+    icon: '🏆',
+    points: 80,
+    unlocked: false
+  },
+  {
+    id: 'level-master',
+    title: 'Level Master',
+    description: 'Reach level 10',
+    icon: '🌟',
+    points: 500,
     unlocked: false
   }
 ];
@@ -93,7 +106,9 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     sessionsCompleted: 0,
     tasksCompleted: 0,
     flashcardsReviewed: 0,
-    totalStudyTime: 0
+    totalStudyTime: 0,
+    quizQuestionsCorrect: 0,
+    routinesCompleted: 0
   });
 
   const [achievements, setAchievements] = useState<Achievement[]>(defaultAchievements);
@@ -118,6 +133,13 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const calculateLevel = (points: number) => Math.floor(points / 100) + 1;
 
+  const showNotification = (message: string) => {
+    // Simple notification display
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('StudyMate Pro', { body: message, icon: '/favicon.ico' });
+    }
+  };
+
   const checkAchievements = (newStats: UserStats) => {
     const updatedAchievements = achievements.map(achievement => {
       if (achievement.unlocked) return achievement;
@@ -140,12 +162,16 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         case 'knowledge-seeker':
           shouldUnlock = newStats.flashcardsReviewed >= 100;
           break;
-        case 'marathon-runner':
-          shouldUnlock = newStats.totalStudyTime >= 480; // 8 hours
+        case 'quiz-champion':
+          shouldUnlock = newStats.quizQuestionsCorrect >= 50;
+          break;
+        case 'level-master':
+          shouldUnlock = newStats.level >= 10;
           break;
       }
 
       if (shouldUnlock) {
+        showNotification(`Achievement Unlocked: ${achievement.title}!`);
         return { ...achievement, unlocked: true, unlockedAt: new Date() };
       }
       return achievement;
@@ -165,13 +191,15 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
+    
+    showNotification(`+${points} XP for ${activity}!`);
   };
 
   const completeSession = () => {
     const newStats = {
       ...userStats,
       sessionsCompleted: userStats.sessionsCompleted + 1,
-      totalPoints: userStats.totalPoints + 20
+      totalPoints: userStats.totalPoints + 25
     };
     newStats.level = calculateLevel(newStats.totalPoints);
     
@@ -179,6 +207,8 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
+    
+    showNotification('+25 XP for completing study session!');
   };
 
   const completeTask = () => {
@@ -193,13 +223,20 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
+    
+    showNotification('+10 XP for completing task!');
   };
 
-  const reviewFlashcard = () => {
+  const reviewFlashcard = (difficulty: 'easy' | 'medium' | 'hard') => {
+    let points = 5; // base points
+    if (difficulty === 'easy') points = 10;
+    else if (difficulty === 'medium') points = 7;
+    else if (difficulty === 'hard') points = 3;
+
     const newStats = {
       ...userStats,
       flashcardsReviewed: userStats.flashcardsReviewed + 1,
-      totalPoints: userStats.totalPoints + 5
+      totalPoints: userStats.totalPoints + points
     };
     newStats.level = calculateLevel(newStats.totalPoints);
     
@@ -207,6 +244,42 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setUserStats(newStats);
     setAchievements(newAchievements);
     saveData(newStats, newAchievements);
+    
+    showNotification(`+${points} XP for flashcard review!`);
+  };
+
+  const correctQuizAnswer = () => {
+    const points = 15;
+    const newStats = {
+      ...userStats,
+      quizQuestionsCorrect: userStats.quizQuestionsCorrect + 1,
+      totalPoints: userStats.totalPoints + points
+    };
+    newStats.level = calculateLevel(newStats.totalPoints);
+    
+    const newAchievements = checkAchievements(newStats);
+    setUserStats(newStats);
+    setAchievements(newAchievements);
+    saveData(newStats, newAchievements);
+    
+    showNotification(`+${points} XP for correct answer!`);
+  };
+
+  const completeRoutine = () => {
+    const points = 30;
+    const newStats = {
+      ...userStats,
+      routinesCompleted: userStats.routinesCompleted + 1,
+      totalPoints: userStats.totalPoints + points
+    };
+    newStats.level = calculateLevel(newStats.totalPoints);
+    
+    const newAchievements = checkAchievements(newStats);
+    setUserStats(newStats);
+    setAchievements(newAchievements);
+    saveData(newStats, newAchievements);
+    
+    showNotification(`+${points} XP for completing routine!`);
   };
 
   const addStudyTime = (minutes: number) => {
@@ -229,7 +302,9 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       sessionsCompleted: 0,
       tasksCompleted: 0,
       flashcardsReviewed: 0,
-      totalStudyTime: 0
+      totalStudyTime: 0,
+      quizQuestionsCorrect: 0,
+      routinesCompleted: 0
     };
     
     const resetAchievements = defaultAchievements.map(a => ({ ...a, unlocked: false }));
@@ -247,8 +322,11 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       completeSession,
       completeTask,
       reviewFlashcard,
+      correctQuizAnswer,
+      completeRoutine,
       addStudyTime,
-      resetStats
+      resetStats,
+      showNotification
     }}>
       {children}
     </GamificationContext.Provider>

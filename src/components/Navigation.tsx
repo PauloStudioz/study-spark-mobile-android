@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Timer, Calculator, BookOpen, Brain, CheckSquare, HelpCircle, BarChart3, StickyNote } from 'lucide-react';
+import { Timer, Calculator, BookOpen, Brain, CheckSquare, HelpCircle, BarChart3, StickyNote, Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -22,17 +22,19 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
     { id: 'flashcards', icon: Brain, label: 'Cards' },
     { id: 'todo', icon: CheckSquare, label: 'Todo' },
     { id: 'notes', icon: StickyNote, label: 'Notes' },
+    { id: 'routine', icon: Calendar, label: 'Routine' },
+    { id: 'schedule', icon: CalendarDays, label: 'Schedule' },
     { id: 'analytics', icon: BarChart3, label: 'Stats' },
   ];
 
   // Split navigation into two rows for better mobile experience
-  const topRow = navItems.slice(0, 4);
-  const bottomRow = navItems.slice(4, 8);
+  const topRow = navItems.slice(0, 5);
+  const bottomRow = navItems.slice(5, 10);
 
   return (
     <nav className={`fixed bottom-0 left-0 right-0 bg-gradient-to-r ${colors.headerGradient} p-2 shadow-lg rounded-t-2xl max-w-md mx-auto`}>
       {/* Top Row */}
-      <div className="grid grid-cols-4 gap-1 mb-1">
+      <div className="grid grid-cols-5 gap-1 mb-1">
         {topRow.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -55,7 +57,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                   transition={{ duration: 0.2 }}
                 />
               )}
-              <Icon size={16} className="relative z-10" />
+              <Icon size={14} className="relative z-10" />
               <span className="text-xs font-medium relative z-10 truncate">
                 {item.label}
               </span>
@@ -65,7 +67,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
       </div>
       
       {/* Bottom Row */}
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid grid-cols-5 gap-1">
         {bottomRow.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -88,7 +90,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                   transition={{ duration: 0.2 }}
                 />
               )}
-              <Icon size={16} className="relative z-10" />
+              <Icon size={14} className="relative z-10" />
               <span className="text-xs font-medium relative z-10 truncate">
                 {item.label}
               </span>

@@ -11,6 +11,8 @@ import TodoList from '../components/TodoList';
 import QuizMaker from '../components/QuizMaker';
 import StudyAnalytics from '../components/StudyAnalytics';
 import QuickNotes from '../components/QuickNotes';
+import RoutineMaker from '../components/RoutineMaker';
+import ScheduleMaker from '../components/ScheduleMaker';
 import Navigation from '../components/Navigation';
 import Settings from '../components/Settings';
 import NotificationCenter from '../components/NotificationCenter';
@@ -43,14 +45,22 @@ const AppContent = () => {
         return <StudyAnalytics />;
       case 'notes':
         return <QuickNotes />;
+      case 'routine':
+        return <RoutineMaker />;
+      case 'schedule':
+        return <ScheduleMaker />;
       default:
         return <PomodoroTimer />;
     }
   };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${colors.gradient} ${isDarkMode ? 'text-white' : ''}`}>
-      <div className={`max-w-md mx-auto ${isDarkMode ? 'bg-gray-900' : 'bg-white'} shadow-2xl min-h-screen relative`}>
+    <div className={`min-h-screen bg-gradient-to-br ${colors.gradient} transition-all duration-300`}>
+      <div className={`max-w-md mx-auto shadow-2xl min-h-screen relative transition-all duration-300 ${
+        isDarkMode 
+          ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
+          : 'bg-white'
+      }`}>
         <header className={`bg-gradient-to-r ${colors.headerGradient} text-white p-4 rounded-b-3xl shadow-lg relative`}>
           <motion.h1 
             className="text-2xl font-bold text-center"
@@ -83,7 +93,7 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className="p-4 pb-28 overflow-hidden">
+        <main className={`p-4 pb-36 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, x: 20 }}

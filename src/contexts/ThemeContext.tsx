@@ -5,101 +5,88 @@ export interface Theme {
   id: string;
   name: string;
   gradient: string;
-  headerGradient: string;
   cardGradient: string;
-  accentColor: string;
+  headerGradient: string;
   textColor: string;
-  darkGradient: string;
-  darkHeaderGradient: string;
-  darkCardGradient: string;
-  darkAccentColor: string;
-  darkTextColor: string;
+  darkGradient?: string;
+  darkCardGradient?: string;
+  darkHeaderGradient?: string;
+  darkTextColor?: string;
 }
 
 const themes: Theme[] = [
   {
-    id: 'blue-purple',
-    name: 'Ocean Breeze',
-    gradient: 'from-blue-50 via-indigo-50 to-purple-50',
-    headerGradient: 'from-blue-600 to-purple-600',
-    cardGradient: 'from-blue-50 to-indigo-100',
-    accentColor: 'blue-600',
+    id: 'blue',
+    name: 'Ocean Blue',
+    gradient: 'from-blue-400 to-blue-600',
+    cardGradient: 'from-blue-50 to-white',
+    headerGradient: 'from-blue-500 to-blue-700',
     textColor: 'blue-700',
-    darkGradient: 'from-blue-900 via-indigo-900 to-purple-900',
-    darkHeaderGradient: 'from-blue-700 to-purple-700',
-    darkCardGradient: 'from-blue-800 to-indigo-800',
-    darkAccentColor: 'blue-400',
+    darkGradient: 'from-slate-900 to-blue-900',
+    darkCardGradient: 'from-slate-800 to-blue-900',
+    darkHeaderGradient: 'from-blue-600 to-blue-800',
     darkTextColor: 'blue-300'
   },
   {
-    id: 'pink-orange',
-    name: 'Sunset Glow',
-    gradient: 'from-pink-50 via-orange-50 to-red-50',
-    headerGradient: 'from-pink-500 to-orange-500',
-    cardGradient: 'from-pink-50 to-orange-100',
-    accentColor: 'pink-600',
-    textColor: 'pink-700',
-    darkGradient: 'from-pink-900 via-orange-900 to-red-900',
-    darkHeaderGradient: 'from-pink-600 to-orange-600',
-    darkCardGradient: 'from-pink-800 to-orange-800',
-    darkAccentColor: 'pink-400',
-    darkTextColor: 'pink-300'
-  },
-  {
-    id: 'green-teal',
-    name: 'Forest Mint',
-    gradient: 'from-green-50 via-emerald-50 to-teal-50',
-    headerGradient: 'from-green-600 to-teal-600',
-    cardGradient: 'from-green-50 to-emerald-100',
-    accentColor: 'green-600',
-    textColor: 'green-700',
-    darkGradient: 'from-green-900 via-emerald-900 to-teal-900',
-    darkHeaderGradient: 'from-green-700 to-teal-700',
-    darkCardGradient: 'from-green-800 to-emerald-800',
-    darkAccentColor: 'green-400',
-    darkTextColor: 'green-300'
-  },
-  {
-    id: 'purple-indigo',
-    name: 'Cosmic Purple',
-    gradient: 'from-purple-50 via-violet-50 to-indigo-50',
-    headerGradient: 'from-purple-600 to-indigo-600',
-    cardGradient: 'from-purple-50 to-violet-100',
-    accentColor: 'purple-600',
+    id: 'purple',
+    name: 'Royal Purple',
+    gradient: 'from-purple-400 to-pink-400',
+    cardGradient: 'from-purple-50 to-pink-50',
+    headerGradient: 'from-purple-500 to-pink-500',
     textColor: 'purple-700',
-    darkGradient: 'from-purple-900 via-violet-900 to-indigo-900',
-    darkHeaderGradient: 'from-purple-700 to-indigo-700',
-    darkCardGradient: 'from-purple-800 to-violet-800',
-    darkAccentColor: 'purple-400',
+    darkGradient: 'from-slate-900 to-purple-900',
+    darkCardGradient: 'from-slate-800 to-purple-900',
+    darkHeaderGradient: 'from-purple-600 to-pink-600',
     darkTextColor: 'purple-300'
   },
   {
-    id: 'amber-yellow',
-    name: 'Golden Hour',
-    gradient: 'from-amber-50 via-yellow-50 to-orange-50',
-    headerGradient: 'from-amber-500 to-yellow-500',
-    cardGradient: 'from-amber-50 to-yellow-100',
-    accentColor: 'amber-600',
-    textColor: 'amber-700',
-    darkGradient: 'from-amber-900 via-yellow-900 to-orange-900',
-    darkHeaderGradient: 'from-amber-600 to-yellow-600',
-    darkCardGradient: 'from-amber-800 to-yellow-800',
-    darkAccentColor: 'amber-400',
-    darkTextColor: 'amber-300'
+    id: 'green',
+    name: 'Forest Green',
+    gradient: 'from-green-400 to-emerald-500',
+    cardGradient: 'from-green-50 to-emerald-50',
+    headerGradient: 'from-green-500 to-emerald-600',
+    textColor: 'green-700',
+    darkGradient: 'from-slate-900 to-green-900',
+    darkCardGradient: 'from-slate-800 to-green-900',
+    darkHeaderGradient: 'from-green-600 to-emerald-600',
+    darkTextColor: 'green-300'
+  },
+  {
+    id: 'orange',
+    name: 'Sunset Orange',
+    gradient: 'from-orange-400 to-red-400',
+    cardGradient: 'from-orange-50 to-red-50',
+    headerGradient: 'from-orange-500 to-red-500',
+    textColor: 'orange-700',
+    darkGradient: 'from-slate-900 to-orange-900',
+    darkCardGradient: 'from-slate-800 to-orange-900',
+    darkHeaderGradient: 'from-orange-600 to-red-600',
+    darkTextColor: 'orange-300'
+  },
+  {
+    id: 'teal',
+    name: 'Tropical Teal',
+    gradient: 'from-teal-400 to-cyan-400',
+    cardGradient: 'from-teal-50 to-cyan-50',
+    headerGradient: 'from-teal-500 to-cyan-500',
+    textColor: 'teal-700',
+    darkGradient: 'from-slate-900 to-teal-900',
+    darkCardGradient: 'from-slate-800 to-teal-900',
+    darkHeaderGradient: 'from-teal-600 to-cyan-600',
+    darkTextColor: 'teal-300'
   }
 ];
 
 interface ThemeContextType {
   currentTheme: Theme;
   themes: Theme[];
-  setTheme: (themeId: string) => void;
   isDarkMode: boolean;
+  setTheme: (themeId: string) => void;
   toggleDarkMode: () => void;
   getThemeColors: () => {
     gradient: string;
-    headerGradient: string;
     cardGradient: string;
-    accentColor: string;
+    headerGradient: string;
     textColor: string;
   };
 }
@@ -111,16 +98,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    const savedThemeId = localStorage.getItem('studymate-theme');
-    const savedDarkMode = localStorage.getItem('studymate-dark-mode') === 'true';
+    const savedTheme = localStorage.getItem('studymate-theme');
+    const savedDarkMode = localStorage.getItem('studymate-dark-mode');
     
-    if (savedThemeId) {
-      const savedTheme = themes.find(t => t.id === savedThemeId);
-      if (savedTheme) {
-        setCurrentTheme(savedTheme);
-      }
+    if (savedTheme) {
+      const theme = themes.find(t => t.id === savedTheme);
+      if (theme) setCurrentTheme(theme);
     }
-    setIsDarkMode(savedDarkMode);
+    
+    if (savedDarkMode) {
+      setIsDarkMode(JSON.parse(savedDarkMode));
+    }
   }, []);
 
   const setTheme = (themeId: string) => {
@@ -134,25 +122,35 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
-    localStorage.setItem('studymate-dark-mode', newDarkMode.toString());
+    localStorage.setItem('studymate-dark-mode', JSON.stringify(newDarkMode));
   };
 
-  const getThemeColors = () => ({
-    gradient: isDarkMode ? currentTheme.darkGradient : currentTheme.gradient,
-    headerGradient: isDarkMode ? currentTheme.darkHeaderGradient : currentTheme.headerGradient,
-    cardGradient: isDarkMode ? currentTheme.darkCardGradient : currentTheme.cardGradient,
-    accentColor: isDarkMode ? currentTheme.darkAccentColor : currentTheme.accentColor,
-    textColor: isDarkMode ? currentTheme.darkTextColor : currentTheme.textColor,
-  });
+  const getThemeColors = () => {
+    if (isDarkMode) {
+      return {
+        gradient: currentTheme.darkGradient || currentTheme.gradient,
+        cardGradient: currentTheme.darkCardGradient || currentTheme.cardGradient,
+        headerGradient: currentTheme.darkHeaderGradient || currentTheme.headerGradient,
+        textColor: currentTheme.darkTextColor || currentTheme.textColor
+      };
+    }
+    
+    return {
+      gradient: currentTheme.gradient,
+      cardGradient: currentTheme.cardGradient,
+      headerGradient: currentTheme.headerGradient,
+      textColor: currentTheme.textColor
+    };
+  };
 
   return (
-    <ThemeContext.Provider value={{ 
-      currentTheme, 
-      themes, 
-      setTheme, 
-      isDarkMode, 
-      toggleDarkMode, 
-      getThemeColors 
+    <ThemeContext.Provider value={{
+      currentTheme,
+      themes,
+      isDarkMode,
+      setTheme,
+      toggleDarkMode,
+      getThemeColors
     }}>
       {children}
     </ThemeContext.Provider>
