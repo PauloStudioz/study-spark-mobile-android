@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Clock, Target, Award, Calendar, Brain, Crown } from 'lucide-react';
@@ -201,7 +202,7 @@ const StudyAnalytics = () => {
         </Card>
       </motion.div>
 
-      {/* Line Graph for Study Time */}
+      {/* Study Time Line Graph */}
       {dailyStats.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -219,38 +220,40 @@ const StudyAnalytics = () => {
                 Study Time Trend
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={dailyStats}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
-                    fontSize={12}
-                  />
-                  <YAxis 
-                    stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
-                    fontSize={12}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-                      border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
-                      borderRadius: '8px',
-                      color: isDarkMode ? '#ffffff' : '#000000'
-                    }}
-                    formatter={(value, name) => [`${value} hours`, 'Study Time']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="hours" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3}
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <CardContent className="p-6">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={dailyStats}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke={isDarkMode ? '#9ca3af' : '#6b7280'} 
+                      fontSize={12}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+                        border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`,
+                        borderRadius: '8px',
+                        color: isDarkMode ? '#ffffff' : '#000000'
+                      }}
+                      formatter={(value, name) => [`${value} hours`, 'Study Time']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="hours" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

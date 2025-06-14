@@ -45,6 +45,7 @@ const Flashcards = () => {
   const [newCard, setNewCard] = useState({ front: '', back: '' });
   const [newDeckName, setNewDeckName] = useState('');
   const [aiText, setAiText] = useState('');
+  const [lastMarkTime, setLastMarkTime] = useState<number>(0);
 
   useEffect(() => {
     loadDecks();
@@ -242,6 +243,13 @@ const Flashcards = () => {
 
   const markDifficulty = (difficulty: 'easy' | 'medium' | 'hard') => {
     if (!currentDeck) return;
+
+    // Prevent rapid clicking exploitation - 1 second cooldown
+    const now = Date.now();
+    if (now - lastMarkTime < 1000) {
+      return;
+    }
+    setLastMarkTime(now);
 
     const card = currentDeck.cards[currentCardIndex];
     let difficultyScore = 0;

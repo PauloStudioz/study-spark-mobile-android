@@ -1,317 +1,433 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Timer, Calculator, StickyNote, Minimize2, Maximize2 } from 'lucide-react';
+import { Zap, Calculator, StickyNote, Timer, X, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/contexts/ThemeContext';
 
 const FloatingWidgets = () => {
-  const { getThemeColors, isDarkMode } = useTheme();
-  const colors = getThemeColors();
+  const { isDarkMode } = useTheme();
+  const [showQuickAccess, setShowQuickAccess] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [showMiniTimer, setShowMiniTimer] = useState(false);
   
-  const [widgets, setWidgets] = useState({
-    quickTimer: { visible: false, minimized: false, position: { x: 200, y: 20 } },
-    miniCalc: { visible: false, minimized: false, position: { x: 20, y: 200 } },
-    quickNote: { visible: false, minimized: false, position: { x: 200, y: 200 } }
+  // Calculator state
+  const [display, setDisplay] = useState('0');
+  const [previousValue, setPreviousValue] = useState<number | null>(null);
+  const [operation, setOperation] = useState<string | null>(null);
+  const [waitingForOperand, setWaitingForOperand] = useState(false);
+
+  // Notes state
+  const [notes, setNotes] = useState(() => {
+    const saved = localStorage.getItem('studymate-quick-notes');
+    return saved || '';
   });
 
-  const [quickTimerTime, setQuickTimerTime] = useState(5);
-  const [quickTimerActive, setQuickTimerActive] = useState(false);
-  const [quickNote, setQuickNote] = useState('');
-  const [calcDisplay, setCalcDisplay] = useState('0');
-  const [calcExpression, setCalcExpression] = useState('');
-  const [newNumber, setNewNumber] = useState(true);
+  useEffect(() => {
+    localStorage.setItem('studymate-quick-notes', notes);
+  }, [notes]);
 
-  const toggleWidget = (widgetId: keyof typeof widgets) => {
-    setWidgets(prev => ({
-      ...prev,
-      [widgetId]: { ...prev[widgetId], visible: !prev[widgetId].visible }
-    }));
-  };
-
-  const minimizeWidget = (widgetId: keyof typeof widgets) => {
-    setWidgets(prev => ({
-      ...prev,
-      [widgetId]: { ...prev[widgetId], minimized: !prev[widgetId].minimized }
-    }));
-  };
-
-  const closeWidget = (widgetId: keyof typeof widgets) => {
-    setWidgets(prev => ({
-      ...prev,
-      [widgetId]: { ...prev[widgetId], visible: false }
-    }));
-  };
+  // Mini timer state
+  const [miniTimerMinutes, setMiniTimerMinutes] = useState(5);
+  const [miniTimerSeconds, setMiniTimerSeconds] = useState(0);
+  const [miniTimerActive, setMiniTimerActive] = useState(false);
+  const [miniTimerTime, setMiniTimerTime] = useState(0);
+  const timerInterval = useRef<number | null>(null);
 
   // Calculator functions
-  const inputNumber = (num: string) => {
-    if (newNumber) {
-      setCalcDisplay(num);
-      setNewNumber(false);
+  const handleNumberClick = (number: string) => {
+    if (waitingForOperand) {
+      setDisplay(number);
+      setWaitingForOperand(false);
     } else {
-      setCalcDisplay(calcDisplay === '0' ? num : calcDisplay + num);
+      setDisplay(display === '0' ? number : display + number);
     }
   };
 
-  const inputOperator = (op: string) => {
-    setCalcExpression(calcDisplay + ' ' + op + ' ');
-    setNewNumber(true);
+  const handleOperationClick = (op: string) => {
+    if (previousValue === null) {
+      setPreviousValue(parseFloat(display));
+    } else if (operation) {
+      const result = performCalculation();
+      setDisplay(String(result));
+      setPreviousValue(result);
+    }
+
+    setWaitingForOperand(true);
+    setOperation(op);
   };
 
-  const calculate = () => {
-    try {
-      const result = eval(calcExpression + calcDisplay);
-      setCalcDisplay(result.toString());
-      setCalcExpression('');
-      setNewNumber(true);
-    } catch {
-      setCalcDisplay('Error');
-      setCalcExpression('');
-      setNewNumber(true);
+  const handleEqualsClick = () => {
+    if (operation) {
+      const result = performCalculation();
+      setDisplay(String(result));
+      setPreviousValue(null);
+      setOperation(null);
+      setWaitingForOperand(false);
     }
   };
 
-  const clearCalc = () => {
-    setCalcDisplay('0');
-    setCalcExpression('');
-    setNewNumber(true);
+  const handleClearClick = () => {
+    setDisplay('0');
+    setPreviousValue(null);
+    setOperation(null);
+    setWaitingForOperand(false);
   };
 
-  // Quick Timer Widget
-  const QuickTimerWidget = () => (
-    <motion.div
-      drag
-      dragMomentum={false}
-      className="fixed z-40"
-      style={{ x: widgets.quickTimer.position.x, y: widgets.quickTimer.position.y }}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-    >
-      <Card className={`w-48 ${isDarkMode ? 'bg-gray-800/90 text-white' : 'bg-white/90'} shadow-lg backdrop-blur-sm`}>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <Timer size={16} className={isDarkMode ? 'text-blue-400' : 'text-blue-600'} />
-            <div className="flex space-x-1">
-              <Button
-                onClick={() => minimizeWidget('quickTimer')}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                {widgets.quickTimer.minimized ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
-              </Button>
-              <Button
-                onClick={() => closeWidget('quickTimer')}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                <X size={12} />
-              </Button>
-            </div>
-          </div>
-          
-          {!widgets.quickTimer.minimized && (
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  value={quickTimerTime}
-                  onChange={(e) => setQuickTimerTime(parseInt(e.target.value) || 1)}
-                  className={`w-16 text-center text-sm p-1 rounded ${
-                    isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-gray-100 border-gray-300'
-                  } border`}
-                  min="1"
-                  max="60"
-                />
-                <span className="text-xs">min</span>
-              </div>
-              <Button
-                onClick={() => setQuickTimerActive(!quickTimerActive)}
-                size="sm"
-                className={`w-full text-xs ${quickTimerActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white`}
-              >
-                {quickTimerActive ? 'Stop Timer' : 'Start Timer'}
-              </Button>
-              {quickTimerActive && (
-                <div className="text-center text-lg font-mono">
-                  {String(Math.floor(quickTimerTime)).padStart(2, '0')}:00
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+  const handleDecimalClick = () => {
+    if (!display.includes('.')) {
+      setDisplay(display + '.');
+    }
+  };
 
-  // Mini Calculator Widget (restored to calculator look)
-  const MiniCalcWidget = () => (
-    <motion.div
-      drag
-      dragMomentum={false}
-      className="fixed z-40"
-      style={{ x: widgets.miniCalc.position.x, y: widgets.miniCalc.position.y }}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-    >
-      <Card className={`w-56 ${isDarkMode ? 'bg-gray-800/90 text-white' : 'bg-white/90'} shadow-lg backdrop-blur-sm`}>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <Calculator size={16} className={isDarkMode ? 'text-green-400' : 'text-green-600'} />
-            <div className="flex space-x-1">
-              <Button
-                onClick={() => minimizeWidget('miniCalc')}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                {widgets.miniCalc.minimized ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
-              </Button>
-              <Button
-                onClick={() => closeWidget('miniCalc')}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                <X size={12} />
-              </Button>
-            </div>
-          </div>
-          
-          {!widgets.miniCalc.minimized && (
-            <div className="space-y-2">
-              <div className={`text-right text-lg p-2 rounded min-h-[40px] ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'} font-mono border-2 border-gray-300`}>
-                <div className="text-xs text-gray-500">{calcExpression}</div>
-                <div>{calcDisplay}</div>
-              </div>
-              
-              <div className="grid grid-cols-4 gap-1">
-                <Button onClick={clearCalc} variant="outline" size="sm" className="text-xs bg-red-100 hover:bg-red-200">C</Button>
-                <Button onClick={() => inputOperator('/')} variant="outline" size="sm" className="text-xs">÷</Button>
-                <Button onClick={() => inputOperator('*')} variant="outline" size="sm" className="text-xs">×</Button>
-                <Button onClick={() => setCalcDisplay(calcDisplay.slice(0, -1) || '0')} variant="outline" size="sm" className="text-xs">⌫</Button>
-                
-                <Button onClick={() => inputNumber('7')} variant="outline" size="sm" className="text-xs">7</Button>
-                <Button onClick={() => inputNumber('8')} variant="outline" size="sm" className="text-xs">8</Button>
-                <Button onClick={() => inputNumber('9')} variant="outline" size="sm" className="text-xs">9</Button>
-                <Button onClick={() => inputOperator('-')} variant="outline" size="sm" className="text-xs">-</Button>
-                
-                <Button onClick={() => inputNumber('4')} variant="outline" size="sm" className="text-xs">4</Button>
-                <Button onClick={() => inputNumber('5')} variant="outline" size="sm" className="text-xs">5</Button>
-                <Button onClick={() => inputNumber('6')} variant="outline" size="sm" className="text-xs">6</Button>
-                <Button onClick={() => inputOperator('+')} variant="outline" size="sm" className="text-xs">+</Button>
-                
-                <Button onClick={() => inputNumber('1')} variant="outline" size="sm" className="text-xs">1</Button>
-                <Button onClick={() => inputNumber('2')} variant="outline" size="sm" className="text-xs">2</Button>
-                <Button onClick={() => inputNumber('3')} variant="outline" size="sm" className="text-xs">3</Button>
-                <Button onClick={calculate} variant="default" size="sm" className="text-xs bg-blue-500 hover:bg-blue-600 row-span-2">=</Button>
-                
-                <Button onClick={() => inputNumber('0')} variant="outline" size="sm" className="text-xs col-span-2">0</Button>
-                <Button onClick={() => inputNumber('.')} variant="outline" size="sm" className="text-xs">.</Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+  const performCalculation = (): number => {
+    const current = parseFloat(display);
+    let result = Number(previousValue);
 
-  // Quick Note Widget (restored to note look)
-  const QuickNoteWidget = () => (
-    <motion.div
-      drag
-      dragMomentum={false}
-      className="fixed z-40"
-      style={{ x: widgets.quickNote.position.x, y: widgets.quickNote.position.y }}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-    >
-      <Card className={`w-64 ${isDarkMode ? 'bg-yellow-900/90 text-yellow-100' : 'bg-yellow-100/90'} shadow-lg backdrop-blur-sm border-yellow-300`}>
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <StickyNote size={16} className={isDarkMode ? 'text-yellow-400' : 'text-yellow-600'} />
-            <div className="flex space-x-1">
-              <Button
-                onClick={() => minimizeWidget('quickNote')}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                {widgets.quickNote.minimized ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
-              </Button>
-              <Button
-                onClick={() => closeWidget('quickNote')}
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-              >
-                <X size={12} />
-              </Button>
-            </div>
-          </div>
-          
-          {!widgets.quickNote.minimized && (
-            <div>
-              <textarea
-                value={quickNote}
-                onChange={(e) => setQuickNote(e.target.value)}
-                className={`w-full h-32 text-sm p-2 rounded resize-none border-none outline-none ${
-                  isDarkMode ? 'bg-yellow-800/50 text-yellow-100 placeholder-yellow-400' : 'bg-yellow-50 text-yellow-900 placeholder-yellow-600'
-                }`}
-                placeholder="Quick note..."
-                style={{ fontFamily: 'Comic Sans MS, cursive' }}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+    switch (operation) {
+      case '+':
+        result += current;
+        break;
+      case '-':
+        result -= current;
+        break;
+      case '*':
+        result *= current;
+        break;
+      case '/':
+        if (current === 0) return 0;
+        result /= current;
+        break;
+      default:
+        return current;
+    }
+
+    return result;
+  };
+
+  // Notes functions
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotes(e.target.value);
+  };
+
+  // Timer functions
+  useEffect(() => {
+    if (miniTimerActive && !timerInterval.current) {
+      timerInterval.current = window.setInterval(() => {
+        setMiniTimerTime((prevTime) => {
+          if (prevTime <= 0) {
+            clearInterval(timerInterval.current!);
+            timerInterval.current = null;
+            setMiniTimerActive(false);
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    } else if (!miniTimerActive && timerInterval.current) {
+      clearInterval(timerInterval.current);
+      timerInterval.current = null;
+    }
+
+    return () => {
+      if (timerInterval.current) {
+        clearInterval(timerInterval.current);
+      }
+    };
+  }, [miniTimerActive]);
+
+  useEffect(() => {
+    setMiniTimerTime(miniTimerMinutes * 60 + miniTimerSeconds);
+  }, [miniTimerMinutes, miniTimerSeconds]);
+
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const startMiniTimer = () => {
+    setMiniTimerActive(true);
+  };
+
+  const pauseMiniTimer = () => {
+    setMiniTimerActive(false);
+  };
+
+  const resetMiniTimer = () => {
+    setMiniTimerActive(false);
+    setMiniTimerMinutes(5);
+    setMiniTimerSeconds(0);
+    setMiniTimerTime(5 * 60);
+  };
 
   return (
     <>
-      {/* Other Widgets */}
-      <AnimatePresence>
-        {widgets.quickTimer.visible && <QuickTimerWidget />}
-        {widgets.miniCalc.visible && <MiniCalcWidget />}
-        {widgets.quickNote.visible && <QuickNoteWidget />}
-      </AnimatePresence>
-
-      {/* Widget Toggle Menu - Positioned in middle of tabs */}
+      {/* Main Quick Access Button - Centered Lightning */}
       <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-32 left-1/2 transform -translate-x-1/2 z-30 flex space-x-2"
+        className="fixed bottom-24 right-6 z-50"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
       >
         <Button
-          onClick={() => toggleWidget('quickTimer')}
-          variant="outline"
-          size="sm"
-          className={`rounded-full p-2 ${widgets.quickTimer.visible ? 'bg-blue-500 text-white' : isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'} shadow-lg`}
+          onClick={() => setShowQuickAccess(!showQuickAccess)}
+          className={`w-16 h-16 rounded-full shadow-2xl border-2 ${
+            isDarkMode
+              ? 'bg-gradient-to-r from-blue-600 to-purple-600 border-blue-400 hover:from-blue-700 hover:to-purple-700'
+              : 'bg-gradient-to-r from-blue-500 to-purple-500 border-blue-300 hover:from-blue-600 hover:to-purple-600'
+          } transition-all duration-300`}
         >
-          <Timer size={16} />
-        </Button>
-        <Button
-          onClick={() => toggleWidget('miniCalc')}
-          variant="outline"
-          size="sm"
-          className={`rounded-full p-2 ${widgets.miniCalc.visible ? 'bg-green-500 text-white' : isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'} shadow-lg`}
-        >
-          <Calculator size={16} />
-        </Button>
-        <Button
-          onClick={() => toggleWidget('quickNote')}
-          variant="outline"
-          size="sm"
-          className={`rounded-full p-2 ${widgets.quickNote.visible ? 'bg-yellow-500 text-white' : isDarkMode ? 'bg-gray-700 text-white' : 'bg-white'} shadow-lg`}
-        >
-          <StickyNote size={16} />
+          <Zap size={28} className="text-white relative z-10" />
+          {/* Pulsing effect */}
+          <div className="absolute inset-0 rounded-full bg-blue-400 opacity-30 animate-ping" />
         </Button>
       </motion.div>
+
+      {/* Quick Access Menu */}
+      <AnimatePresence>
+        {showQuickAccess && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-44 right-6 z-40"
+          >
+            <Card className={`${
+              isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
+            } backdrop-blur-sm shadow-2xl`}>
+              <CardContent className="p-4">
+                <div className="flex flex-col space-y-3">
+                  <Button
+                    onClick={() => {
+                      setShowCalculator(true);
+                      setShowQuickAccess(false);
+                    }}
+                    variant="ghost"
+                    className={`flex items-center space-x-2 justify-start ${
+                      isDarkMode ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <Calculator size={20} />
+                    <span>Calculator</span>
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowNotes(true);
+                      setShowQuickAccess(false);
+                    }}
+                    variant="ghost"
+                    className={`flex items-center space-x-2 justify-start ${
+                      isDarkMode ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <StickyNote size={20} />
+                    <span>Quick Notes</span>
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowMiniTimer(true);
+                      setShowQuickAccess(false);
+                    }}
+                    variant="ghost"
+                    className={`flex items-center space-x-2 justify-start ${
+                      isDarkMode ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <Timer size={20} />
+                    <span>Mini Timer</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Calculator Widget */}
+      <AnimatePresence>
+        {showCalculator && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-32 left-4 z-50"
+          >
+            <Card className={`${
+              isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
+            } backdrop-blur-sm shadow-2xl`}>
+              <CardContent className="p-4">
+                <div className="text-right text-3xl font-bold mb-2">{display}</div>
+                <div className="grid grid-cols-4 gap-2">
+                  <Button onClick={handleClearClick} variant="outline">
+                    C
+                  </Button>
+                  <Button onClick={() => handleOperationClick('/')} variant="outline">
+                    /
+                  </Button>
+                  <Button onClick={() => handleOperationClick('*')} variant="outline">
+                    *
+                  </Button>
+                  <Button
+                    onClick={() => setShowCalculator(false)}
+                    variant="ghost"
+                    className="text-red-500 hover:bg-red-100"
+                  >
+                    <X size={20} />
+                  </Button>
+                  <Button onClick={() => handleNumberClick('7')} variant="ghost">
+                    7
+                  </Button>
+                  <Button onClick={() => handleNumberClick('8')} variant="ghost">
+                    8
+                  </Button>
+                  <Button onClick={() => handleNumberClick('9')} variant="ghost">
+                    9
+                  </Button>
+                  <Button onClick={() => handleOperationClick('-')} variant="outline">
+                    -
+                  </Button>
+                  <Button onClick={() => handleNumberClick('4')} variant="ghost">
+                    4
+                  </Button>
+                  <Button onClick={() => handleNumberClick('5')} variant="ghost">
+                    5
+                  </Button>
+                  <Button onClick={() => handleNumberClick('6')} variant="ghost">
+                    6
+                  </Button>
+                  <Button onClick={() => handleOperationClick('+')} variant="outline">
+                    +
+                  </Button>
+                  <Button onClick={() => handleNumberClick('1')} variant="ghost">
+                    1
+                  </Button>
+                  <Button onClick={() => handleNumberClick('2')} variant="ghost">
+                    2
+                  </Button>
+                  <Button onClick={() => handleNumberClick('3')} variant="ghost">
+                    3
+                  </Button>
+                  <Button onClick={handleEqualsClick} variant="outline" className="row-span-2">
+                    =
+                  </Button>
+                  <Button onClick={() => handleNumberClick('0')} variant="ghost" className="col-span-2">
+                    0
+                  </Button>
+                  <Button onClick={handleDecimalClick} variant="ghost">
+                    .
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Notes Widget */}
+      <AnimatePresence>
+        {showNotes && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-1/2 left-4 -translate-y-1/2 z-50"
+          >
+            <Card className={`${
+              isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
+            } backdrop-blur-sm shadow-2xl`}>
+              <CardContent className="p-4 w-80">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-semibold">Quick Notes</h3>
+                  <Button
+                    onClick={() => setShowNotes(false)}
+                    variant="ghost"
+                    className="text-red-500 hover:bg-red-100"
+                  >
+                    <X size={20} />
+                  </Button>
+                </div>
+                <Input
+                  as="textarea"
+                  placeholder="Write your notes here..."
+                  className="rounded-md h-48 resize-none"
+                  value={notes}
+                  onChange={handleNotesChange}
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mini Timer Widget */}
+      <AnimatePresence>
+        {showMiniTimer && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-32 right-4 z-50"
+          >
+            <Card className={`${
+              isDarkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
+            } backdrop-blur-sm shadow-2xl`}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold">Mini Timer</h3>
+                  <Button
+                    onClick={() => setShowMiniTimer(false)}
+                    variant="ghost"
+                    className="text-red-500 hover:bg-red-100"
+                  >
+                    <X size={20} />
+                  </Button>
+                </div>
+                <div className="text-4xl font-bold text-center mb-2">
+                  {formatTime(miniTimerTime)}
+                </div>
+                <div className="flex space-x-2 justify-center mb-3">
+                  <Button
+                    onClick={startMiniTimer}
+                    disabled={miniTimerActive}
+                    className="bg-green-500 hover:bg-green-600 rounded-full"
+                  >
+                    <Plus size={16} />
+                  </Button>
+                  <Button
+                    onClick={pauseMiniTimer}
+                    disabled={!miniTimerActive}
+                    className="bg-yellow-500 hover:bg-yellow-600 rounded-full"
+                  >
+                    <Minus size={16} />
+                  </Button>
+                  <Button
+                    onClick={resetMiniTimer}
+                    className="bg-red-500 hover:bg-red-600 rounded-full"
+                  >
+                    <RotateCcw size={16} />
+                  </Button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm">Minutes:</label>
+                  <Input
+                    type="number"
+                    value={miniTimerMinutes}
+                    onChange={(e) => setMiniTimerMinutes(parseInt(e.target.value))}
+                    className="w-16 text-sm rounded-md"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
