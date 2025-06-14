@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Quote } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +13,7 @@ const QuoteOfDay = () => {
   const { isDarkMode } = useTheme();
   const [quote, setQuote] = useState<QuoteData>({ text: '', author: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [firstLoaded, setFirstLoaded] = useState(false);
 
   const fallbackQuotes = [
     { text: "Education is the most powerful weapon which you can use to change the world.", author: "Nelson Mandela" },
@@ -23,19 +23,37 @@ const QuoteOfDay = () => {
     { text: "The expert in anything was once a beginner.", author: "Helen Hayes" }
   ];
 
-  const fetchQuote = async () => {
+  // Fetch quote from API or fallback
+  const fetchQuote = async ({ allowCached = false } = {}) => {
     setIsLoading(true);
     try {
-      // New API: https://zenquotes.io/api/today
-      // Response format: [{ q: "...", a: "...", ... }, ...]
+      if (allowCached) {
+        const today = new Date().toDateString();
+        const savedDate = localStorage.getItem('quote-date');
+        const savedQuote = localStorage.getItem('daily-quote');
+        if (savedDate === today && savedQuote) {
+          setQuote(JSON.parse(savedQuote));
+          setIsLoading(false);
+          setFirstLoaded(true);
+          return;
+        }
+      }
       const response = await fetch('https://zenquotes.io/api/today');
       if (!response.ok) throw new Error('Failed to fetch quote');
       const data = await response.json();
       if (Array.isArray(data) && data.length > 0 && data[0]?.q && data[0]?.a) {
         setQuote({
           text: data[0].q,
-          author: data[0].a,
+          author: data[0].a
         });
+        // Save as daily quote only ONCE per day
+        if (!firstLoaded || allowCached) {
+          const today = new Date().toDateString();
+          localStorage.setItem('quote-date', today);
+          localStorage.setItem('daily-quote', JSON.stringify({
+            text: data[0].q, author: data[0].a
+          }));
+        }
       } else {
         throw new Error('Quote API returned empty');
       }
@@ -44,32 +62,19 @@ const QuoteOfDay = () => {
       setQuote(randomQuote);
     } finally {
       setIsLoading(false);
+      setFirstLoaded(true);
     }
   };
 
+  // On mount: try loading cached; if not, fetch new
   useEffect(() => {
-    const today = new Date().toDateString();
-    const savedDate = localStorage.getItem('quote-date');
-    const savedQuote = localStorage.getItem('daily-quote');
-
-    if (savedDate === today && savedQuote) {
-      setQuote(JSON.parse(savedQuote));
-      setIsLoading(false);
-    } else {
-      fetchQuote();
-    }
+    fetchQuote({ allowCached: true });
+    // eslint-disable-next-line
   }, []);
 
-  useEffect(() => {
-    if (quote.text && !isLoading) {
-      const today = new Date().toDateString();
-      localStorage.setItem('quote-date', today);
-      localStorage.setItem('daily-quote', JSON.stringify(quote));
-    }
-  }, [quote, isLoading]);
-
+  // Always fetch fresh quote on "refresh"
   const refreshQuote = () => {
-    fetchQuote();
+    fetchQuote({ allowCached: false });
   };
 
   return (
