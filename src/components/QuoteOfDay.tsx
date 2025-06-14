@@ -73,7 +73,7 @@ const QuoteOfDay = () => {
   };
 
   return (
-    <div className="min-h-[400px] flex flex-col justify-center">
+    <div className="flex flex-col justify-center">
       <Card className={`${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white/90 border-gray-200'} shadow-xl w-full`}>
         <CardHeader className="text-center pb-2">
           <CardTitle className={`text-xl ${isDarkMode ? 'text-white' : 'text-gray-800'} flex items-center justify-center gap-2`}>
@@ -82,22 +82,25 @@ const QuoteOfDay = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 text-center">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin">
-                <RefreshCw size={24} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
+          {/* Fixed height container to prevent layout shift */}
+          <div className="min-h-[120px] flex flex-col justify-center">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin">
+                  <RefreshCw size={24} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <blockquote className={`text-lg italic mb-4 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} leading-relaxed min-h-[3rem]`}>
-                "{quote.text}"
-              </blockquote>
-              <cite className={`text-sm font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                — {quote.author}
-              </cite>
-            </>
-          )}
+            ) : (
+              <>
+                <blockquote className={`text-lg italic mb-4 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} leading-relaxed`}>
+                  "{quote.text}"
+                </blockquote>
+                <cite className={`text-sm font-medium ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                  — {quote.author}
+                </cite>
+              </>
+            )}
+          </div>
           
           <div className="mt-6">
             <Button
