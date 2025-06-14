@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Calculator, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,70 +20,87 @@ interface Subject {
   grades: Grade[];
 }
 
+const LOCAL_KEY = 'grade-calculator-data-v1';
+
 const GradeCalculator = () => {
   const { isDarkMode } = useTheme();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [newSubject, setNewSubject] = useState('');
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  const [assignmentDrafts, setAssignmentDrafts] = useState<Record<string, { name: string, score: string, maxScore: string, weight: string }>>({});
 
-  // For adding grade into a subject
-  const [newGrade, setNewGrade] = useState({
-    name: '',
-    score: '',
-    maxScore: '',
-    weight: ''
-  });
+  // Load subjects from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(LOCAL_KEY);
+    if (saved) setSubjects(JSON.parse(saved));
+  }, []);
+
+  // Save subjects to localStorage on change
+  useEffect(() => {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(subjects));
+  }, [subjects]);
 
   // Add new subject
   const addSubject = () => {
     if (!newSubject.trim()) return;
     const newSub: Subject = {
       id: Date.now().toString(),
-      name: newSubject,
+      name: newSubject.trim(),
       grades: []
     };
     setSubjects([...subjects, newSub]);
     setNewSubject('');
-    setSelectedSubjectId(newSub.id);
-    setNewGrade({ name: '', score: '', maxScore: '', weight: '' });
+    setAssignmentDrafts(drafts => ({ ...drafts, [newSub.id]: { name: '', score: '', maxScore: '', weight: '' } }));
   };
 
   // Remove subject
   const removeSubject = (id: string) => {
     setSubjects(subjects.filter(subject => subject.id !== id));
-    if (selectedSubjectId === id) setSelectedSubjectId(null);
+    setAssignmentDrafts(drafts => {
+      const newDrafts = { ...drafts };
+      delete newDrafts[id];
+      return newDrafts;
+    });
   };
 
-  // Select Subject
-  const selectSubject = (id: string) => {
-    setSelectedSubjectId(id);
-    setNewGrade({ name: '', score: '', maxScore: '', weight: '' });
+  // Handle subject draft values (one per subject)
+  const handleDraftChange = (subjectId: string, field: string, value: string) => {
+    setAssignmentDrafts(drafts => ({
+      ...drafts,
+      [subjectId]: {
+        ...drafts[subjectId],
+        [field]: value
+      }
+    }));
   };
 
-  // Add grade to subject
-  const addGrade = () => {
+  // Add grade to subject (using that subject's draft)
+  const addGrade = (subjectId: string) => {
+    const draft = assignmentDrafts[subjectId];
     if (
-      !selectedSubjectId ||
-      !newGrade.name ||
-      !newGrade.score ||
-      !newGrade.maxScore ||
-      !newGrade.weight
+      !draft ||
+      !draft.name.trim() ||
+      !draft.score.trim() ||
+      !draft.maxScore.trim() ||
+      !draft.weight.trim()
     ) return;
     const grade: Grade = {
       id: Date.now().toString(),
-      name: newGrade.name,
-      score: parseFloat(newGrade.score),
-      maxScore: parseFloat(newGrade.maxScore),
-      weight: parseFloat(newGrade.weight)
+      name: draft.name.trim(),
+      score: parseFloat(draft.score),
+      maxScore: parseFloat(draft.maxScore),
+      weight: parseFloat(draft.weight)
     };
     setSubjects(subjects =>
       subjects.map(subject =>
-        subject.id === selectedSubjectId
+        subject.id === subjectId
           ? { ...subject, grades: [...subject.grades, grade] }
           : subject
       )
     );
-    setNewGrade({ name: '', score: '', maxScore: '', weight: '' });
+    setAssignmentDrafts(drafts => ({
+      ...drafts,
+      [subjectId]: { name: '', score: '', maxScore: '', weight: '' }
+    }));
   };
 
   // Remove grade from subject
@@ -97,7 +114,7 @@ const GradeCalculator = () => {
     );
   };
 
-  // Average of all subject final percentages (each subject is weighted equally for average)
+  // Weighted average for subject
   const calculateSubjectFinal = (subject: Subject) => {
     if (!subject.grades.length) return 0;
     let totalWeightedScore = 0, totalWeight = 0;
@@ -179,23 +196,33 @@ const GradeCalculator = () => {
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle
-                  onClick={() => selectSubject(subject.id)}
-                  className={`text-lg cursor-pointer truncate ${selectedSubjectId === subject.id
-                    ? (isDarkMode ? 'text-blue-300' : 'text-blue-700')
-                    : (isDarkMode ? 'text-gray-200' : 'text-gray-900')
-                  }`}
+                  className={`text-lg truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}
                 >
                   {subject.name}
                 </CardTitle>
-                <Button
-                  onClick={() => removeSubject(subject.id)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2"
-                  title="Remove subject"
-                >
-                  <Trash2 size={16} />
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2"
+                    title="Add assignment"
+                    onClick={() => {
+                      // Focus the grade entry fields (not modal for simplicity)
+                      document.getElementById(`add-draft-${subject.id}`)?.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    }}
+                  >
+                    <Plus size={18} />
+                  </Button>
+                  <Button
+                    onClick={() => removeSubject(subject.id)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2"
+                    title="Remove subject"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
               </div>
               <div className="mt-1 mb-1">
                 <span className={`font-semibold ${getGradeColor(calculateSubjectFinal(subject))}`}>
@@ -231,47 +258,43 @@ const GradeCalculator = () => {
                   );
                 })}
               </div>
-            </CardContent>
-            {/* If this is the selected subject, show grade entry form */}
-            {selectedSubjectId === subject.id && (
-              <CardContent>
-                <div className="space-y-2 pt-2 border-t border-gray-300/10">
+              {/* Assignment draft for this subject */}
+              <div className="space-y-2 pt-2 border-t border-gray-300/10 mt-4" id={`add-draft-${subject.id}`}>
+                <Input
+                  placeholder="Assignment name"
+                  value={assignmentDrafts[subject.id]?.name || ""}
+                  onChange={e => handleDraftChange(subject.id, "name", e.target.value)}
+                  className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                />
+                <div className="grid grid-cols-3 gap-2">
                   <Input
-                    placeholder="Assignment name"
-                    value={newGrade.name}
-                    onChange={e => setNewGrade({ ...newGrade, name: e.target.value })}
+                    placeholder="Score"
+                    type="number"
+                    value={assignmentDrafts[subject.id]?.score || ""}
+                    onChange={e => handleDraftChange(subject.id, "score", e.target.value)}
                     className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
                   />
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      placeholder="Score"
-                      type="number"
-                      value={newGrade.score}
-                      onChange={e => setNewGrade({ ...newGrade, score: e.target.value })}
-                      className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                    />
-                    <Input
-                      placeholder="Max Score"
-                      type="number"
-                      value={newGrade.maxScore}
-                      onChange={e => setNewGrade({ ...newGrade, maxScore: e.target.value })}
-                      className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                    />
-                    <Input
-                      placeholder="Weight %"
-                      type="number"
-                      value={newGrade.weight}
-                      onChange={e => setNewGrade({ ...newGrade, weight: e.target.value })}
-                      className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-                    />
-                  </div>
-                  <Button onClick={addGrade} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-                    <Plus size={20} className="mr-2" />
-                    Add Grade
-                  </Button>
+                  <Input
+                    placeholder="Max Score"
+                    type="number"
+                    value={assignmentDrafts[subject.id]?.maxScore || ""}
+                    onChange={e => handleDraftChange(subject.id, "maxScore", e.target.value)}
+                    className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                  />
+                  <Input
+                    placeholder="Weight %"
+                    type="number"
+                    value={assignmentDrafts[subject.id]?.weight || ""}
+                    onChange={e => handleDraftChange(subject.id, "weight", e.target.value)}
+                    className={`${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                  />
                 </div>
-              </CardContent>
-            )}
+                <Button onClick={() => addGrade(subject.id)} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+                  <Plus size={20} className="mr-2" />
+                  Add Assignment
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         ))}
       </div>
