@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Timer,
@@ -48,11 +47,29 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
   const { getThemeColors, isDarkMode } = useTheme();
   const colors = getThemeColors();
 
-  // Main/secondary toggler
+  // Shows if "More" is open
   const [showMoreTabs, setShowMoreTabs] = useState(false);
+
+  // NEW: track which tab is active in the MORE menu
+  const [activeSecondaryTab, setActiveSecondaryTab] = useState<string | null>(null);
 
   // Tabs to render
   const navTabs = showMoreTabs ? secondaryTabs : mainTabs;
+
+  // Effect: if switching to main, reset activeSecondaryTab
+  useEffect(() => {
+    if (!showMoreTabs) setActiveSecondaryTab(null);
+  }, [showMoreTabs]);
+
+  // Function: get which tab is "active" for coloring/highlighting
+  const isTabActive = (item: typeof mainTabs[number] | typeof secondaryTabs[number]) => {
+    if (!showMoreTabs) {
+      return activeTab === item.id;
+    } else {
+      // Secondary tabs: highlight whichever secondary is selected
+      return activeSecondaryTab === item.id;
+    }
+  };
 
   return (
     <nav
@@ -69,11 +86,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
       >
         {navTabs.map((item) => {
           const Icon = item.icon;
-          // Only highlight for main tabs (as per your last behavior)
-          const isActive = !showMoreTabs
-            ? activeTab === item.id
-            : false;
-
+          const isActive = isTabActive(item);
           const isSpecial =
             (!showMoreTabs && item.id === "more") ||
             (showMoreTabs && item.id === "back");
@@ -87,8 +100,13 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                 } else if (showMoreTabs && item.id === "back") {
                   setShowMoreTabs(false);
                 } else if (!isSpecial) {
-                  setActiveTab(item.id);
-                  setShowMoreTabs(false);
+                  if (!showMoreTabs) {
+                    setActiveTab(item.id);
+                  } else {
+                    setActiveTab(item.id); // Set this secondary tab as the active content
+                    setActiveSecondaryTab(item.id); // Mark it as active in nav bar
+                  }
+                  // Don't close the "More" menu after clicking a secondary tab - keep it open
                 }
               }}
               variant="ghost"

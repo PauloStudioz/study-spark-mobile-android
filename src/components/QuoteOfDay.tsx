@@ -26,15 +26,19 @@ const QuoteOfDay = () => {
   const fetchQuote = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://api.quotable.io/random?tags=education|inspirational');
-      if (!response.ok) {
-        throw new Error('Failed to fetch quote');
-      }
+      // New API: https://zenquotes.io/api/today
+      // Response format: [{ q: "...", a: "...", ... }, ...]
+      const response = await fetch('https://zenquotes.io/api/today');
+      if (!response.ok) throw new Error('Failed to fetch quote');
       const data = await response.json();
-      setQuote({
-        text: data.content,
-        author: data.author
-      });
+      if (Array.isArray(data) && data.length > 0 && data[0]?.q && data[0]?.a) {
+        setQuote({
+          text: data[0].q,
+          author: data[0].a,
+        });
+      } else {
+        throw new Error('Quote API returned empty');
+      }
     } catch (err) {
       const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
       setQuote(randomQuote);
