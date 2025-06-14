@@ -36,7 +36,7 @@ const StudyAnalytics = () => {
 
   const nextLevelXP = (userStats.level + 1) * 100;
   const currentLevelXP = userStats.level * 100;
-  const progressToNextLevel = ((userStats.xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
+  const progressToNextLevel = ((userStats.totalPoints - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100;
 
   return (
     <div className="space-y-6">
@@ -49,7 +49,7 @@ const StudyAnalytics = () => {
               Level {userStats.level}
             </h2>
             <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              {userStats.xp} / {nextLevelXP} XP
+              {userStats.totalPoints} / {nextLevelXP} XP
             </p>
           </div>
           
@@ -112,7 +112,7 @@ const StudyAnalytics = () => {
             <TrendingUp className="text-green-500 mx-auto mb-2" size={24} />
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total XP</p>
             <p className={`text-xl font-bold ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>
-              {userStats.xp}
+              {userStats.totalPoints}
             </p>
           </CardContent>
         </Card>
