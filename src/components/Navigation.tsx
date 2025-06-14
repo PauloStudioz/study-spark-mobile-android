@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Timer, Calculator, BookOpen, Brain, CheckSquare, HelpCircle, BarChart3, StickyNote, Calendar, CalendarDays } from 'lucide-react';
+import { Timer, Calculator, BookOpen, Brain, CheckSquare, HelpCircle, BarChart3, StickyNote, Calendar, CalendarDays, Target, GraduationCap, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -25,11 +25,15 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
     { id: 'routine', icon: Calendar, label: 'Routine' },
     { id: 'schedule', icon: CalendarDays, label: 'Schedule' },
     { id: 'analytics', icon: BarChart3, label: 'Stats' },
+    { id: 'habits', icon: Target, label: 'Habits' },
+    { id: 'grades', icon: GraduationCap, label: 'Grades' },
+    { id: 'quote', icon: MessageCircle, label: 'Quote' },
   ];
 
-  // Split navigation into two rows for better mobile experience
+  // Split navigation into multiple rows for better mobile experience
   const topRow = navItems.slice(0, 5);
-  const bottomRow = navItems.slice(5, 10);
+  const middleRow = navItems.slice(5, 10);
+  const bottomRow = navItems.slice(10, 13);
 
   return (
     <nav className={`fixed bottom-0 left-0 right-0 ${
@@ -78,9 +82,9 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
         })}
       </div>
       
-      {/* Bottom Row */}
-      <div className="grid grid-cols-5 gap-1">
-        {bottomRow.map((item) => {
+      {/* Middle Row */}
+      <div className="grid grid-cols-5 gap-1 mb-1">
+        {middleRow.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           
@@ -117,6 +121,51 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
             </Button>
           );
         })}
+      </div>
+
+      {/* Bottom Row */}
+      <div className="grid grid-cols-5 gap-1">
+        {bottomRow.map((item, index) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          
+          return (
+            <Button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              variant="ghost"
+              size="sm"
+              className={`flex flex-col items-center justify-center space-y-1 p-2 min-w-0 relative h-16 transition-all duration-200 ${
+                isActive 
+                  ? isDarkMode 
+                    ? 'text-blue-400 bg-blue-900/30' 
+                    : 'text-white bg-white/20'
+                  : isDarkMode 
+                    ? 'text-gray-300 hover:text-blue-400 hover:bg-gray-700/50' 
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="activeTab3"
+                  className={`absolute inset-0 ${
+                    isDarkMode ? 'bg-blue-500/20' : 'bg-white/20'
+                  } rounded-lg`}
+                  initial={false}
+                  transition={{ duration: 0.2 }}
+                />
+              )}
+              <Icon size={18} className="relative z-10 mb-1" />
+              <span className="text-xs font-medium relative z-10 truncate leading-tight">
+                {item.label}
+              </span>
+            </Button>
+          );
+        })}
+        {/* Empty slots to maintain grid structure */}
+        {[...Array(2)].map((_, index) => (
+          <div key={`empty-${index}`} className="h-16" />
+        ))}
       </div>
     </nav>
   );

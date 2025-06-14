@@ -13,6 +13,9 @@ import StudyAnalytics from '../components/StudyAnalytics';
 import QuickNotes from '../components/QuickNotes';
 import RoutineMaker from '../components/RoutineMaker';
 import ScheduleMaker from '../components/ScheduleMaker';
+import HabitTracker from '../components/HabitTracker';
+import GradeCalculator from '../components/GradeCalculator';
+import QuoteOfDay from '../components/QuoteOfDay';
 import Navigation from '../components/Navigation';
 import Settings from '../components/Settings';
 import NotificationCenter from '../components/NotificationCenter';
@@ -49,6 +52,12 @@ const AppContent = () => {
         return <RoutineMaker />;
       case 'schedule':
         return <ScheduleMaker />;
+      case 'habits':
+        return <HabitTracker />;
+      case 'grades':
+        return <GradeCalculator />;
+      case 'quote':
+        return <QuoteOfDay />;
       default:
         return <PomodoroTimer />;
     }
@@ -101,7 +110,7 @@ const AppContent = () => {
           </div>
         </header>
 
-        <main className={`p-4 pb-40 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
+        <main className={`p-4 pb-60 overflow-hidden ${isDarkMode ? 'text-white' : ''}`}>
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, x: 20 }}
