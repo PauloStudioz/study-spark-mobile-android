@@ -71,42 +71,49 @@ const AppContent = () => {
           ? 'bg-gray-800/80 backdrop-blur-sm' 
           : 'bg-white/90 backdrop-blur-sm'
       }`}>
-        <header className={`flex-shrink-0 ${
-          isDarkMode 
-            ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600' 
-            : `bg-gradient-to-r ${colors.headerGradient}`
-        } text-white px-4 py-4 rounded-b-3xl shadow-lg relative`}>
-          {/* The content stack gets right padding so header text can't overlap the icons */}
-          <div className="pr-24 sm:pr-24">
-            <motion.h1 
-              className="text-2xl font-bold text-center"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              StudyMate Pro
-            </motion.h1>
-            <p className="text-center text-white/80 mt-1">Enhanced Study Companion</p>
-          </div>
-          {/* Header icon buttons: use flex, gap, and right-side absolute alignment, responsive fixes */}
-          <div className="absolute top-4 right-4 flex flex-row items-center gap-2 z-20">
-            <Button
-              onClick={toggleDarkMode}
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20 rounded-full p-2"
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </Button>
-            <NotificationCenter />
-            <Button
-              onClick={() => setShowSettings(true)}
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20 rounded-full p-2"
-            >
-              <SettingsIcon size={20} />
-            </Button>
+        <header
+          className={`flex-shrink-0 ${
+            isDarkMode
+              ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600'
+              : `bg-gradient-to-r ${colors.headerGradient}`
+          } text-white px-4 py-4 rounded-b-3xl shadow-lg relative`}
+        >
+          <div className="relative flex items-center justify-center w-full">
+            {/* Invisible box for left spacing (same width as right icons) */}
+            <div className="w-24 hidden sm:block" aria-hidden="true" />
+            <div className="flex flex-col text-center flex-1 min-w-0">
+              <motion.h1
+                className="text-2xl font-bold truncate"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                StudyMate Pro
+              </motion.h1>
+              <p className="text-white/80 mt-1 truncate">
+                Enhanced Study Companion
+              </p>
+            </div>
+            {/* Header icon buttons */}
+            <div className="absolute right-0 top-0 flex flex-row items-center gap-2 z-20 h-full pr-0">
+              <Button
+                onClick={toggleDarkMode}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20 rounded-full p-2"
+              >
+                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </Button>
+              <NotificationCenter />
+              <Button
+                onClick={() => setShowSettings(true)}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20 rounded-full p-2"
+              >
+                <SettingsIcon size={20} />
+              </Button>
+            </div>
           </div>
         </header>
 
