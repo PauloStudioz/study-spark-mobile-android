@@ -11,6 +11,7 @@ interface FlashcardStudyCardProps {
   setShowBack: (show: boolean) => void;
   reviewButtons: { label: string; grade: string; color: string; xp: number }[];
   onReview: () => void;
+  onReviewWithDifficulty?: (difficulty: 'easy' | 'medium' | 'hard') => void;
   freeReviewMode: boolean;
   onNext: () => void;
   onPrev: () => void;
@@ -19,13 +20,16 @@ interface FlashcardStudyCardProps {
   currIndex: number;
   totalCards: number;
   deckName: string;
+  isAnimating?: boolean;
 }
 
 const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
   card,
   showBack,
   setShowBack,
+  reviewButtons,
   onReview,
+  onReviewWithDifficulty,
   freeReviewMode,
   onNext,
   onPrev,
@@ -34,6 +38,7 @@ const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
   currIndex,
   totalCards,
   deckName,
+  isAnimating = false,
 }) => (
   <div className="space-y-6">
     <div className="flex items-center justify-between">
@@ -50,17 +55,19 @@ const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
       <Badge variant="outline" className="hidden sm:inline">{deckName}</Badge>
     </div>
 
-    <FlashcardCard
-      front={card.front}
-      back={card.back}
-      showBack={showBack}
-      onToggle={() => setShowBack(!showBack)}
-    />
+    <div className={`transition-all duration-300 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+      <FlashcardCard
+        front={card.front}
+        back={card.back}
+        showBack={showBack}
+        onToggle={() => setShowBack(!showBack)}
+      />
+    </div>
 
     {!showBack && (
       <div className="flex justify-center space-x-2">
         <Button
-          className="bg-blue-600 rounded-xl px-4"
+          className="bg-blue-600 hover:bg-blue-700 rounded-xl px-4 transition-all duration-200 hover:scale-105"
           onClick={onReview}
         >
           Reveal Answer
@@ -68,11 +75,33 @@ const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
       </div>
     )}
 
+    {showBack && onReviewWithDifficulty && (
+      <div className="space-y-4">
+        <div className="text-center text-sm text-gray-600 mb-3">
+          How difficult was this card?
+        </div>
+        <div className="flex justify-center space-x-3">
+          {reviewButtons.map((button) => (
+            <Button
+              key={button.grade}
+              className={`${button.color} rounded-xl px-4 py-2 transition-all duration-200 hover:scale-105 hover:shadow-lg`}
+              onClick={() => onReviewWithDifficulty(button.grade as 'easy' | 'medium' | 'hard')}
+            >
+              <div className="text-center">
+                <div className="font-medium">{button.label}</div>
+                <div className="text-xs opacity-90">+{button.xp} XP</div>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </div>
+    )}
+
     <div className="flex justify-between">
       <Button
         onClick={onPrev}
         variant="outline"
-        className="rounded-xl px-6"
+        className="rounded-xl px-6 transition-all duration-200 hover:scale-105"
       >
         <ChevronLeft size={16} /> Previous
       </Button>
@@ -84,13 +113,13 @@ const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
               onRestart();
               setShowBack(false);
             }}
-            className="rounded-xl px-6"
+            className="rounded-xl px-6 transition-all duration-200 hover:scale-105"
           >Restart</Button>
         )}
         <Button
           onClick={onNext}
           variant="outline"
-          className="rounded-xl px-6"
+          className="rounded-xl px-6 transition-all duration-200 hover:scale-105"
         >
           Next <ChevronRight size={16} />
         </Button>
@@ -101,7 +130,7 @@ const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
       <div className="flex justify-center mt-2">
         <Button
           variant="outline"
-          className="rounded-xl"
+          className="rounded-xl transition-all duration-200 hover:scale-105"
           onClick={onExitFree}
         >
           Exit Free Review

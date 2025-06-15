@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { useFlashcardQueue } from "./hooks/useFlashcardQueue";
 import { useFreeReviewQueue } from "./hooks/useFreeReviewQueue";
 import { useHaptics } from "./hooks/useHaptics";
 import { useShakeToRestart } from "./hooks/useShakeToRestart";
+import { useGamification } from "@/contexts/GamificationContext";
 
 export interface Flashcard {
   id: string;
@@ -24,9 +26,11 @@ interface FlashcardStudyProps {
   onImportFlashcards?: (cards: Flashcard[]) => void;
 }
 
-// Simplified review buttons for manual mode
+// Review buttons with XP rewards
 const reviewButtons = [
-  { label: "Reveal", grade: "show", color: "bg-blue-600", xp: 0 },
+  { label: "Hard", grade: "hard", color: "bg-red-600 hover:bg-red-700", xp: 5 },
+  { label: "Medium", grade: "medium", color: "bg-yellow-600 hover:bg-yellow-700", xp: 10 },
+  { label: "Easy", grade: "easy", color: "bg-green-600 hover:bg-green-700", xp: 15 },
 ];
 
 const FullscreenIcon = ({ isFS }: { isFS: boolean }) => (
@@ -45,7 +49,9 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const [freeReviewMode, setFreeReviewMode] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const { vibrate } = useHaptics();
+  const { reviewFlashcard } = useGamification();
 
   // Shake to restart handler
   useShakeToRestart(
@@ -72,23 +78,33 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const totalCards = freeReviewMode ? flashcards.length : allCards.length;
   const currIndex = freeReviewMode ? freeQueue.index : regularQueue.index;
 
-  // Enhanced card navigation
+  // Enhanced card navigation with animation
   const handleNext = useCallback(() => {
+    setIsAnimating(true);
     setShowBack(false);
-    if (freeReviewMode) {
-      freeQueue.next();
-    } else {
-      regularQueue.next();
-    }
+    
+    setTimeout(() => {
+      if (freeReviewMode) {
+        freeQueue.next();
+      } else {
+        regularQueue.next();
+      }
+      setIsAnimating(false);
+    }, 150);
   }, [freeReviewMode, freeQueue, regularQueue]);
 
   const handlePrev = useCallback(() => {
+    setIsAnimating(true);
     setShowBack(false);
-    if (freeReviewMode) {
-      freeQueue.prev();
-    } else {
-      regularQueue.prev();
-    }
+    
+    setTimeout(() => {
+      if (freeReviewMode) {
+        freeQueue.prev();
+      } else {
+        regularQueue.prev();
+      }
+      setIsAnimating(false);
+    }, 150);
   }, [freeReviewMode, freeQueue, regularQueue]);
 
   const handleRestart = useCallback(() => {
@@ -100,6 +116,13 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     setShowBack(false);
     setFreeReviewMode(false);
   }, []);
+
+  // Handle review with XP
+  const handleReview = useCallback((difficulty: 'easy' | 'medium' | 'hard') => {
+    reviewFlashcard(difficulty);
+    vibrate();
+    handleNext();
+  }, [reviewFlashcard, vibrate, handleNext]);
 
   // Handle "empty deck" case
   if (isEmptyDeck) {
@@ -141,6 +164,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
           setShowBack={setShowBack}
           reviewButtons={reviewButtons}
           onReview={() => setShowBack(true)}
+          onReviewWithDifficulty={handleReview}
           freeReviewMode={freeReviewMode}
           onNext={handleNext}
           onPrev={handlePrev}
@@ -149,6 +173,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
           currIndex={currIndex}
           totalCards={totalCards}
           deckName={deckName}
+          isAnimating={isAnimating}
         />
       </div>
     </div>
