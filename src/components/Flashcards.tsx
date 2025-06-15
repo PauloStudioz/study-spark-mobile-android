@@ -159,13 +159,10 @@ const Flashcards: React.FC = () => {
 
       // Build new cards for the target deck
       const now = new Date();
-      const baseState: SchedulerState = { interval: 1, ease: 2.5, repetitions: 0 };
       const newCards: Flashcard[] = flashcards.map((c: any, i: number) => ({
         id: Date.now().toString() + "_" + i,
         front: c.front,
         back: c.back,
-        state: baseState,
-        nextReview: now.toISOString(),
       }));
 
       let updatedDecks: Deck[];
