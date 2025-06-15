@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+
+import React, { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { scheduleAnki, SchedulerState, ReviewGrade } from "@/utils/ankiScheduler";
@@ -8,6 +9,8 @@ import { useFlashcardQueue } from "./hooks/useFlashcardQueue";
 import { useFreeReviewQueue } from "./hooks/useFreeReviewQueue";
 import { useHaptics } from "./hooks/useHaptics";
 import AutoFlipControl from "./AutoFlipControl";
+import { useAutoFlipTimer } from "./hooks/useAutoFlipTimer";
+import { useShakeToRestart } from "./hooks/useShakeToRestart";
 
 export interface Flashcard {
   id: string;
@@ -57,35 +60,16 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoFlip, setAutoFlip] = useState(false);
   const [autoFlipInterval, setAutoFlipInterval] = useState(5);
-  const [secondsLeft, setSecondsLeft] = useState(autoFlipInterval);
   const { vibrate } = useHaptics();
 
-  // For shake-to-restart
-  useEffect(() => {
-    let lastX: number | null = null, lastY: number | null = null, lastZ: number | null = null;
-    let lastTime = 0;
-    function handleMotion(e: DeviceMotionEvent) {
-      if (!e.accelerationIncludingGravity) return;
-      const now = Date.now();
-      if (now - lastTime < 400) return;
-      const { x, y, z } = e.accelerationIncludingGravity;
-      if (lastX !== null && lastY !== null && lastZ !== null) {
-        const delta = Math.abs(x! - lastX) + Math.abs(y! - lastY) + Math.abs(z! - lastZ);
-        if (delta > 25) {
-          // Shake detected
-          setFreeReviewMode(false);
-          setShowBack(false);
-          vibrate("Heavy");
-        }
-      }
-      lastX = x;
-      lastY = y;
-      lastZ = z;
-      lastTime = now;
-    }
-    window.addEventListener("devicemotion", handleMotion);
-    return () => window.removeEventListener("devicemotion", handleMotion);
-  }, [vibrate]);
+  // Shake to restart handler
+  useShakeToRestart(
+    () => {
+      setFreeReviewMode(false);
+      setShowBack(false);
+    },
+    vibrate
+  );
 
   // Regular due cards
   const now = new Date();
@@ -107,30 +91,13 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const totalCards = freeReviewMode ? flashcards.length : dueCards.length;
   const currIndex = freeReviewMode ? freeQueue.index : regularQueue.index;
 
-  // Handle auto-flip timer with visible countdown
-  useEffect(() => {
-    if (!autoFlip || showBack) {
-      setSecondsLeft(autoFlipInterval);
-      return;
-    }
-    setSecondsLeft(autoFlipInterval);
-    let tick = 0;
-    const intervalId = setInterval(() => {
-      tick++;
-      setSecondsLeft(autoFlipInterval - tick);
-      if (tick >= autoFlipInterval) {
-        setShowBack(true);
-      }
-    }, 1000);
-
-    return () => clearInterval(intervalId);
-    // Only reset timer when autoFlip, showBack, or autoFlipInterval changes
-  }, [autoFlip, showBack, autoFlipInterval]);
-
-  // Reset countdown when card changes (e.g., next/prev card, restart)
-  useEffect(() => {
-    setSecondsLeft(autoFlipInterval);
-  }, [card?.id, autoFlipInterval, autoFlip]);
+  // --- Auto-flip countdown (custom hook, manages timer & visible countdown)
+  const [secondsLeft] = useAutoFlipTimer({
+    enabled: autoFlip && !showBack,
+    duration: autoFlipInterval,
+    onElapsed: () => setShowBack(true),
+    resetDeps: [card?.id, autoFlipInterval, autoFlip],
+  });
 
   // Handle "empty deck" case
   if (isEmptyDeck) {
