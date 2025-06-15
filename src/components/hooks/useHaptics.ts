@@ -1,5 +1,5 @@
 
-import { Haptics, ImpactStyle, HapticsNotificationType } from '@capacitor/haptics';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 export function useHaptics() {
   const vibrate = async (style: keyof typeof ImpactStyle = "Medium") => {
@@ -11,9 +11,8 @@ export function useHaptics() {
   };
   const notification = async () => {
     try {
-      await Haptics.notification({ type: HapticsNotificationType.SUCCESS });
+      await Haptics.notification({ type: NotificationType.Success });
     } catch {}
   };
   return { vibrate, notification };
 }
-
