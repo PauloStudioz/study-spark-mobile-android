@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,15 +74,13 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const now = new Date();
   const dueCards = flashcards.filter(fc => new Date(fc.nextReview) <= now);
 
-  // Use correct queue logic for mode
+  // Queues for card modes
   const regularQueue = useFlashcardQueue(dueCards);
   const freeQueue = useFreeReviewQueue(flashcards);
 
-  // What queue/state do we use?
   const isEmptyDeck = flashcards.length === 0;
   const isRegularDone = !freeReviewMode && (dueCards.length === 0 || regularQueue.isDone);
 
-  // Pick the correct card/set
   const card = freeReviewMode
     ? flashcards[freeQueue.currIdx] || flashcards[0]
     : dueCards[regularQueue.currIdx] || dueCards[0];
@@ -92,12 +89,45 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const currIndex = freeReviewMode ? freeQueue.index : regularQueue.index;
 
   // --- Auto-flip countdown (custom hook, manages timer & visible countdown)
-  const [secondsLeft] = useAutoFlipTimer({
+  const [secondsLeft, resetAutoFlipTimer] = useAutoFlipTimer({
     enabled: autoFlip && !showBack,
     duration: autoFlipInterval,
     onElapsed: () => setShowBack(true),
     resetDeps: [card?.id, autoFlipInterval, autoFlip],
   });
+
+  // --- Enhanced card navigation that always resets side & timer
+  const handleNext = useCallback(() => {
+    setShowBack(false);
+    resetAutoFlipTimer();
+    if (freeReviewMode) {
+      freeQueue.next();
+    } else {
+      regularQueue.next();
+    }
+  }, [freeReviewMode, freeQueue, regularQueue, resetAutoFlipTimer]);
+
+  const handlePrev = useCallback(() => {
+    setShowBack(false);
+    resetAutoFlipTimer();
+    if (freeReviewMode) {
+      freeQueue.prev();
+    } else {
+      regularQueue.prev();
+    }
+  }, [freeReviewMode, freeQueue, regularQueue, resetAutoFlipTimer]);
+
+  const handleRestart = useCallback(() => {
+    setShowBack(false);
+    resetAutoFlipTimer();
+    freeQueue.restart();
+  }, [freeQueue, resetAutoFlipTimer]);
+
+  const handleExitFree = useCallback(() => {
+    setShowBack(false);
+    resetAutoFlipTimer();
+    setFreeReviewMode(false);
+  }, [resetAutoFlipTimer]);
 
   // Handle "empty deck" case
   if (isEmptyDeck) {
@@ -162,6 +192,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         freeQueue.addRepeat(freeQueue.currIdx);
       }
       setShowBack(false);
+      resetAutoFlipTimer();
       if (
         freeQueue.queue.length === 1 &&
         freeQueue.index === 0 &&
@@ -180,21 +211,22 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     const newState = scheduleAnki(card.state, grade);
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + newState.interval);
-
     onUpdateCard(card.id, {
       state: newState,
       nextReview: nextReview.toISOString(),
     });
-
     if (grade === "hard") {
       regularQueue.addRepeat(regularQueue.currIdx);
     }
     setShowBack(false);
+    resetAutoFlipTimer();
     regularQueue.removeCurrentFromQueue();
   };
 
   // Fullscreen support: expand card UI
-  const fsClass = isFullscreen ? "fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-all" : "";
+  const fsClass = isFullscreen
+    ? "fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-all"
+    : "";
 
   return (
     <div>
@@ -228,10 +260,10 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
           reviewButtons={reviewButtons}
           onReview={review}
           freeReviewMode={freeReviewMode}
-          onNext={freeReviewMode ? freeQueue.next : regularQueue.next}
-          onPrev={freeReviewMode ? freeQueue.prev : regularQueue.prev}
-          onRestart={freeReviewMode ? () => freeQueue.restart() : undefined}
-          onExitFree={freeReviewMode ? () => setFreeReviewMode(false) : undefined}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          onRestart={freeReviewMode ? handleRestart : undefined}
+          onExitFree={freeReviewMode ? handleExitFree : undefined}
           currIndex={currIndex}
           totalCards={totalCards}
           deckName={deckName}
