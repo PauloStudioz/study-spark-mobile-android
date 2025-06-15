@@ -1,71 +1,126 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings as SettingsIcon, Palette, X, Check, Trophy, RotateCcw, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+
+// Types for notification & display settings
+type NotificationPrefs = {
+  browser: boolean;
+  achievement: boolean;
+  streak: boolean;
+  sessionSound: boolean;
+};
+
+type DisplayPrefs = {
+  fontSize: number; // 1=small, 2=medium, 3=large, 4=xl
+  reduceMotion: boolean;
+  darkModeScheduler: 'system' | 'manual' | 'schedule';
+  schedule?: { from: string; to: string }; // e.g., from '20:00', to '07:00'
+};
+
+const NOTIF_LS_KEY = "studymate-notification-prefs";
+const DISPLAY_LS_KEY = "studymate-display-prefs";
+
+function getNotificationPrefs(): NotificationPrefs {
+  try {
+    return { browser: true, achievement: true, streak: true, sessionSound: true, ...JSON.parse(localStorage.getItem(NOTIF_LS_KEY) ?? '{}') };
+  } catch {
+    return { browser: true, achievement: true, streak: true, sessionSound: true };
+  }
+}
+function getDisplayPrefs(): DisplayPrefs {
+  try {
+    return { fontSize: 2, reduceMotion: false, darkModeScheduler: 'system', ...JSON.parse(localStorage.getItem(DISPLAY_LS_KEY) ?? '{}') };
+  } catch {
+    return { fontSize: 2, reduceMotion: false, darkModeScheduler: 'system' };
+  }
+}
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const fontDesc = ["Small", "Medium", "Large", "Extra Large"];
+
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
-  const { currentTheme, themes, setTheme, getThemeColors, isDarkMode } = useTheme();
+  const { currentTheme, themes, setTheme, getThemeColors, isDarkMode, toggleDarkMode } = useTheme();
   const { userStats, resetStats } = useGamification();
   const colors = getThemeColors();
 
-  const exportData = () => {
-    const data = {
-      theme: currentTheme.id,
-      darkMode: isDarkMode,
-      stats: userStats,
-      notes: JSON.parse(localStorage.getItem('studymate-notes') || '[]'),
-      achievements: JSON.parse(localStorage.getItem('studymate-achievements') || '[]'),
-      sessions: JSON.parse(localStorage.getItem('studymate-sessions') || '[]'),
-      timestamp: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `studymate-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  // Settings state
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(getNotificationPrefs());
+  const [displayPrefs, setDisplayPrefs] = useState<DisplayPrefs>(getDisplayPrefs());
 
-  const importData = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const data = JSON.parse(e.target?.result as string);
-            
-            // Restore data
-            if (data.theme) setTheme(data.theme);
-            if (data.notes) localStorage.setItem('studymate-notes', JSON.stringify(data.notes));
-            if (data.achievements) localStorage.setItem('studymate-achievements', JSON.stringify(data.achievements));
-            if (data.sessions) localStorage.setItem('studymate-sessions', JSON.stringify(data.sessions));
-            if (data.stats) localStorage.setItem('studymate-stats', JSON.stringify(data.stats));
-            
-            alert('Data imported successfully! Please refresh the page.');
-          } catch (err) {
-            alert('Error importing data. Please check the file format.');
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
+  // Sync settings to localStorage
+  useEffect(() => { localStorage.setItem(NOTIF_LS_KEY, JSON.stringify(notificationPrefs)); }, [notificationPrefs]);
+  useEffect(() => { localStorage.setItem(DISPLAY_LS_KEY, JSON.stringify(displayPrefs)); }, [displayPrefs]);
+
+  // Apply font size via CSS custom property
+  useEffect(() => {
+    const root = document.documentElement;
+    const scale = [0.85, 1, 1.125, 1.25][displayPrefs.fontSize - 1] || 1;
+    root.style.setProperty('--studymate-font-scale', String(scale));
+  }, [displayPrefs.fontSize]);
+
+  // Apply reduce motion
+  useEffect(() => {
+    if (displayPrefs.reduceMotion) {
+      document.body.classList.add('motion-safe:!duration-0', 'motion-reduce');
+    } else {
+      document.body.classList.remove('motion-safe:!duration-0', 'motion-reduce');
+    }
+  }, [displayPrefs.reduceMotion]);
+
+  // Auto dark mode scheduler
+  useEffect(() => {
+    if (displayPrefs.darkModeScheduler === 'system') return;
+    if (displayPrefs.darkModeScheduler === 'manual') return;
+    // Schedule-based: from-to (e.g. 20:00 -> 07:00)
+    if (displayPrefs.schedule && displayPrefs.darkModeScheduler === 'schedule') {
+      const { from, to } = displayPrefs.schedule;
+      const check = () => {
+        const now = new Date();
+        const start = new Date();
+        const end = new Date();
+        const [fromH, fromM] = from.split(':').map(Number);
+        const [toH, toM] = to.split(':').map(Number);
+        start.setHours(fromH, fromM || 0, 0, 0);
+        end.setHours(toH, toM || 0, 0, 0);
+        let darkActive = false;
+        if (fromH < toH || (fromH === toH && fromM < toM)) {
+          // same-day
+          darkActive = now >= start && now < end;
+        } else {
+          // crosses midnight
+          darkActive = now >= start || now < end;
+        }
+        if (darkActive !== isDarkMode)
+          toggleDarkMode();
+      };
+      check();
+      const timer = setInterval(check, 60 * 1000);
+      return () => clearInterval(timer);
+    }
+  }, [displayPrefs.darkModeScheduler, displayPrefs.schedule, isDarkMode, toggleDarkMode]);
+
+  // Request browser notification permission
+  function requestBrowserNotifications() {
+    if ('Notification' in window) {
+      Notification.requestPermission().then((p) => {
+        if (p === 'granted') {
+          setNotificationPrefs((s) => ({ ...s, browser: true }));
+        } else {
+          setNotificationPrefs((s) => ({ ...s, browser: false }));
+        }
+      });
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -103,6 +158,134 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Notification Preferences */}
+                <Card className={`shadow-lg border-0 ${isDarkMode ? 'bg-gray-800' : ''}`}>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg">Notification Settings</CardTitle>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Customize notifications for StudyMate Pro.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Browser Notifications</span>
+                      <Switch
+                        checked={notificationPrefs.browser}
+                        onCheckedChange={(checked) => {
+                          setNotificationPrefs(s => ({ ...s, browser: checked }));
+                          if (checked) requestBrowserNotifications();
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Achievement Notifications</span>
+                      <Switch
+                        checked={notificationPrefs.achievement}
+                        onCheckedChange={checked => setNotificationPrefs(s => ({ ...s, achievement: checked }))}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Streak Reminders</span>
+                      <Switch
+                        checked={notificationPrefs.streak}
+                        onCheckedChange={checked => setNotificationPrefs(s => ({ ...s, streak: checked }))}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Session Sound Alerts</span>
+                      <Switch
+                        checked={notificationPrefs.sessionSound}
+                        onCheckedChange={checked => setNotificationPrefs(s => ({ ...s, sessionSound: checked }))}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Display & Interface Preferences */}
+                <Card className={`shadow-lg border-0 ${isDarkMode ? 'bg-gray-800' : ''}`}>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg">Display & Interface</CardTitle>
+                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Tune StudyMate Pro's look & feel for accessibility and comfort.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div>
+                      <span className="text-sm font-medium mb-2">Font Size</span>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <Slider
+                          value={[displayPrefs.fontSize]}
+                          onValueChange={([v]) => setDisplayPrefs(s => ({ ...s, fontSize: v }))}
+                          min={1}
+                          max={4}
+                          step={1}
+                          className="w-40"
+                        />
+                        <span className="text-xs">{fontDesc[(displayPrefs.fontSize ?? 2) - 1]}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Reduce Animations</span>
+                      <Switch
+                        checked={displayPrefs.reduceMotion}
+                        onCheckedChange={checked => setDisplayPrefs(s => ({ ...s, reduceMotion: checked }))}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium">Auto Dark Mode</span>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <select
+                          className="rounded-md border px-2 py-1 bg-background text-xs"
+                          value={displayPrefs.darkModeScheduler}
+                          onChange={e => setDisplayPrefs(s => ({ ...s, darkModeScheduler: e.target.value as 'system' | 'manual' | 'schedule' }))}
+                        >
+                          <option value="system">System Default</option>
+                          <option value="manual">Manual</option>
+                          <option value="schedule">Schedule</option>
+                        </select>
+                        {displayPrefs.darkModeScheduler === 'schedule' && (
+                          <>
+                            <span className="pl-2 text-xs">From:</span>
+                            <input
+                              type="time"
+                              value={displayPrefs.schedule?.from ?? '20:00'}
+                              onChange={e =>
+                                setDisplayPrefs(s => ({
+                                  ...s,
+                                  schedule: { ...(s.schedule ?? { from: '20:00', to: '07:00' }), from: e.target.value }
+                                }))
+                              }
+                              className="bg-background border rounded px-1 text-xs"
+                            />
+                            <span className="pl-2 text-xs">To:</span>
+                            <input
+                              type="time"
+                              value={displayPrefs.schedule?.to ?? '07:00'}
+                              onChange={e =>
+                                setDisplayPrefs(s => ({
+                                  ...s,
+                                  schedule: { ...(s.schedule ?? { from: '20:00', to: '07:00' }), to: e.target.value }
+                                }))
+                              }
+                              className="bg-background border rounded px-1 text-xs"
+                            />
+                          </>
+                        )}
+                      </div>
+                      {displayPrefs.darkModeScheduler === 'manual' && (
+                        <Button
+                          size="sm"
+                          className="mt-2"
+                          variant="outline"
+                          onClick={toggleDarkMode}
+                        >
+                          Toggle {isDarkMode ? 'Light' : 'Dark'} Mode
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Theme Settings */}
                 <Card className={`shadow-lg border-0 ${isDarkMode ? 'bg-gray-800' : ''}`}>
                   <CardHeader className="pb-4">
