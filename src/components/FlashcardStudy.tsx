@@ -1,11 +1,10 @@
+
 import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { scheduleAnki, SchedulerState, ReviewGrade } from "@/utils/ankiScheduler";
 import { useGamification } from "@/contexts/GamificationContext";
-import FlashcardCard from "./FlashcardCard";
+import FlashcardStudyCard from "./FlashcardStudyCard";
 import { useFlashcardQueue } from "./hooks/useFlashcardQueue";
 import { useFreeReviewQueue } from "./hooks/useFreeReviewQueue";
 
@@ -60,8 +59,6 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   // What queue/state do we use?
   const isEmptyDeck = flashcards.length === 0;
   const isRegularDone = !freeReviewMode && (dueCards.length === 0 || regularQueue.isDone);
-  const isFreeReview = freeReviewMode;
-  const freeHasCards = flashcards.length > 0;
 
   // Pick the correct card/set
   const card = freeReviewMode
@@ -70,7 +67,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 
   const totalCards = freeReviewMode ? flashcards.length : dueCards.length;
   const currIndex = freeReviewMode ? freeQueue.index : regularQueue.index;
-  
+
   // Handle "empty deck" case
   if (isEmptyDeck) {
     return (
@@ -119,10 +116,6 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     );
   }
 
-  // Free review mode, all cards - allow endless cycle, restart puts you back at first card
-  // (We hide this message, as all navigation is now looped, so user never "finishes", can keep going)
-  // Instead, we always show the controls.
-
   const getDiffLabel = (grade: ReviewGrade) => {
     if (grade === "again") return "hard";
     if (grade === "hard") return "hard";
@@ -131,9 +124,10 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     return "medium";
   };
 
+  // Handle answer grading for either mode
   const review = (grade: ReviewGrade) => {
     if (freeReviewMode) {
-      // If "Hard", add card to repeat queue in free review mode:
+      // If "Hard" or "Again", add card to repeat queue in free review mode:
       if (grade === "hard" || grade === "again") {
         freeQueue.addRepeat(freeQueue.currIdx);
       }
@@ -162,86 +156,28 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div>
+      {/* Back navigation always available */}
+      <div className="flex mb-3">
         <Button onClick={onClose} variant="outline" className="rounded-xl">
-          <ChevronLeft size={16} /> Back to Decks
+          &larr; Back to Decks
         </Button>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="px-3 py-1">
-            {(totalCards > 0 ? currIndex + 1 : 0)} / {totalCards}
-          </Badge>
-          {freeReviewMode && (
-            <Badge variant="outline" className="ml-2 text-blue-700 border-blue-400">
-              Free Review Mode
-            </Badge>
-          )}
-        </div>
       </div>
-
-      {/* Always show card */}
-      <FlashcardCard
-        front={card.front}
-        back={card.back}
+      <FlashcardStudyCard
+        card={card}
         showBack={showBack}
-        onToggle={() => setShowBack(b => !b)}
+        setShowBack={setShowBack}
+        reviewButtons={reviewButtons}
+        onReview={review}
+        freeReviewMode={freeReviewMode}
+        onNext={freeReviewMode ? freeQueue.next : regularQueue.next}
+        onPrev={freeReviewMode ? freeQueue.prev : regularQueue.prev}
+        onRestart={freeReviewMode ? () => freeQueue.restart() : undefined}
+        onExitFree={freeReviewMode ? () => setFreeReviewMode(false) : undefined}
+        currIndex={currIndex}
+        totalCards={totalCards}
+        deckName={deckName}
       />
-
-      {/* Review/answer buttons */}
-      {showBack && (
-        <div className="flex justify-center space-x-2">
-          {reviewButtons.map(btn => (
-            <Button
-              key={btn.grade}
-              className={btn.color + " rounded-xl px-4"}
-              onClick={() => review(btn.grade)}
-            >
-              {btn.label} {(!freeReviewMode && btn.xp > 0) && (
-                <span className="text-xs opacity-70 ml-1">+{btn.xp}XP</span>
-              )}
-            </Button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex justify-between">
-        <Button
-          onClick={freeReviewMode ? freeQueue.prev : regularQueue.prev}
-          variant="outline"
-          className="rounded-xl px-6"
-        >
-          <ChevronLeft size={16} /> Previous
-        </Button>
-        <div className="flex gap-2 items-center">
-          {freeReviewMode && (
-            <Button
-              variant="outline"
-              onClick={() => { freeQueue.restart(); setShowBack(false); }}
-              className="rounded-xl px-6"
-            >Restart</Button>
-          )}
-          <Button
-            onClick={freeReviewMode ? freeQueue.next : regularQueue.next}
-            variant="outline"
-            className="rounded-xl px-6"
-          >
-            Next <ChevronRight size={16} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Exit button for free review */}
-      {freeReviewMode && (
-        <div className="flex justify-center mt-2">
-          <Button
-            variant="outline"
-            className="rounded-xl"
-            onClick={() => setFreeReviewMode(false)}
-          >
-            Exit Free Review
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
