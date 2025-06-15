@@ -133,10 +133,15 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 
   const review = (grade: ReviewGrade) => {
     if (freeReviewMode) {
+      // If "Hard", add card to repeat queue in free review mode:
+      if (grade === "hard" || grade === "again") {
+        freeQueue.addRepeat(freeQueue.currIdx);
+      }
       setShowBack(false);
       freeQueue.next();
       return;
     }
+
     let xp = GRADE_XP[grade];
     reviewFlashcard(getDiffLabel(grade));
     if (xp > 0) showNotification(`+${xp} XP (flashcards)`);
