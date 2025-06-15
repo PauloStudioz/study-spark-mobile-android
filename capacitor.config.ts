@@ -1,4 +1,3 @@
-
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -26,3 +25,12 @@ const config: CapacitorConfig = {
 }
 
 export default config;
+
+// NEXT STEPS (Do these locally after git pulling):
+// - To enable native notifications, run: npm install @capacitor/push-notifications --save
+// - To enable device haptics: npm install @capacitor/haptics --save
+// - To generate splash screens & app icons: npx capacitor assets generate
+// - See https://capacitorjs.com/docs/apis for more device features (StatusBar, etc.)
+// - After any plugin install, run: npx cap sync
+
+// If running on a physical device, follow the steps in the Lovable mobile guide: https://lovable.dev/blogs/TODO
