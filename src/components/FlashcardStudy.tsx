@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +57,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoFlip, setAutoFlip] = useState(false);
   const [autoFlipInterval, setAutoFlipInterval] = useState(5);
+  const [secondsLeft, setSecondsLeft] = useState(autoFlipInterval);
   const { vibrate } = useHaptics();
 
   // For shake-to-restart
@@ -107,13 +107,30 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const totalCards = freeReviewMode ? flashcards.length : dueCards.length;
   const currIndex = freeReviewMode ? freeQueue.index : regularQueue.index;
 
-  // Handle auto-flip timer
+  // Handle auto-flip timer with visible countdown
   useEffect(() => {
-    if (autoFlip && !showBack) {
-      const timer = setTimeout(() => setShowBack(true), autoFlipInterval * 1000);
-      return () => clearTimeout(timer);
+    if (!autoFlip || showBack) {
+      setSecondsLeft(autoFlipInterval);
+      return;
     }
+    setSecondsLeft(autoFlipInterval);
+    let tick = 0;
+    const intervalId = setInterval(() => {
+      tick++;
+      setSecondsLeft(autoFlipInterval - tick);
+      if (tick >= autoFlipInterval) {
+        setShowBack(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+    // Only reset timer when autoFlip, showBack, or autoFlipInterval changes
   }, [autoFlip, showBack, autoFlipInterval]);
+
+  // Reset countdown when card changes (e.g., next/prev card, restart)
+  useEffect(() => {
+    setSecondsLeft(autoFlipInterval);
+  }, [card?.id, autoFlipInterval, autoFlip]);
 
   // Handle "empty deck" case
   if (isEmptyDeck) {
@@ -225,6 +242,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
             setIsActive={setAutoFlip}
             interval={autoFlipInterval}
             setInterval={setAutoFlipInterval}
+            secondsLeft={autoFlip ? secondsLeft : undefined}
           />
           <Button
             variant={isFullscreen ? "default" : "outline"}
