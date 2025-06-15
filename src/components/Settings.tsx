@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from "react";
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings as SettingsIcon, Palette, X, Check, Trophy, RotateCcw, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useGamification } from '@/contexts/GamificationContext';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
+import DataManagement from "./DataManagement";
 
 // Types for notification & display settings
 type NotificationPrefs = {
@@ -371,24 +373,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                 </Card>
 
                 {/* Data Management */}
-                <Card className={`shadow-lg border-0 ${isDarkMode ? 'bg-gray-800' : ''}`}>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg">Data Management</CardTitle>
-                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      Backup and restore your data
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button onClick={exportData} variant="outline" className="w-full">
-                      <Download className="mr-2" size={16} />
-                      Export Data
-                    </Button>
-                    <Button onClick={importData} variant="outline" className="w-full">
-                      <Upload className="mr-2" size={16} />
-                      Import Data
-                    </Button>
-                  </CardContent>
-                </Card>
+                <DataManagement />
 
                 {/* About Section */}
                 <Card className={`shadow-lg border-0 ${isDarkMode ? 'bg-gray-800' : ''}`}>
