@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import DeckList from "./DeckList";
 import DeckEditor from "./DeckEditor";
@@ -75,6 +74,16 @@ const Flashcards: React.FC = () => {
   useEffect(() => {
     saveDecks(decks);
   }, [decks]);
+
+  // EFFECT: If studyDeckId or editDeckId refer to a missing deck, reset them.
+  useEffect(() => {
+    if (studyDeckId && !decks.find(d => d.id === studyDeckId)) {
+      setStudyDeckId(null);
+    }
+    if (editDeckId && !decks.find(d => d.id === editDeckId)) {
+      setEditDeckId(null);
+    }
+  }, [studyDeckId, editDeckId, decks]);
 
   const addDeck = () => {
     const name = window.prompt("Deck name?");
@@ -188,7 +197,7 @@ const Flashcards: React.FC = () => {
 
   if (studyDeckId) {
     const deck = decks.find(d => d.id === studyDeckId);
-    if (!deck) return null;
+    if (!deck) return null; // This gets handled by the effect now, so quick unmount is safe
     return (
       <FlashcardStudy
         deckName={deck.name}
@@ -203,7 +212,7 @@ const Flashcards: React.FC = () => {
 
   if (editDeckId) {
     const deck = decks.find(d => d.id === editDeckId);
-    if (!deck) return null;
+    if (!deck) return null; // Also handled safely by the effect now
     return (
       <DeckEditor
         deck={deck}
