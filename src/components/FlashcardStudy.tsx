@@ -24,6 +24,7 @@ interface FlashcardStudyProps {
 
 // XP by grade (must match GamificationContext as much as possible)
 const GRADE_XP: Record<ReviewGrade, number> = {
+  again: 0,
   hard: 3,
   good: 7,
   easy: 10,
