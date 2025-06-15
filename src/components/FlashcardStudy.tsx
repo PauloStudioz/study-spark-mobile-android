@@ -55,6 +55,18 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   const card = dueCards[currIdx] || dueCards[0];
   const [showBack, setShowBack] = useState(false);
 
+  // Handle case when no due cards are available
+  if (dueCards.length === 0) {
+    return (
+      <div className="text-center space-y-4">
+        <h2 className="text-xl font-bold">No cards available for review 🎉</h2>
+        <Badge variant="secondary">{deckName}</Badge>
+        <div className="text-gray-600">Check back later or add more cards to this deck.</div>
+        <Button className="mt-6" onClick={onClose}>Back to Decks</Button>
+      </div>
+    );
+  }
+
   if (isDone)
     return (
       <div className="text-center space-y-4">
