@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings as SettingsIcon, Moon, Sun } from 'lucide-react';
@@ -78,38 +79,42 @@ const AppContent = () => {
               : `bg-gradient-to-r ${colors.headerGradient}`
           } text-white px-4 py-4 rounded-b-3xl shadow-lg relative`}
         >
-          <div className="relative flex items-center justify-center w-full">
-            {/* Invisible box for left spacing (same width as right icons) */}
-            <div className="w-24 hidden sm:block" aria-hidden="true" />
-            <div className="flex flex-col text-center flex-1 min-w-0">
+          <div className="flex items-center justify-between w-full relative">
+            {/* Left: Dark mode button */}
+            <div className="flex items-center">
+              <Button
+                onClick={toggleDarkMode}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20 rounded-full p-2"
+                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </Button>
+            </div>
+            {/* Center: Title + subtitle */}
+            <div className="flex flex-col items-center flex-1 min-w-0">
               <motion.h1
-                className="text-2xl font-bold truncate"
+                className="text-2xl font-bold text-center truncate"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
                 StudyMate Pro
               </motion.h1>
-              <p className="text-white/80 mt-1 truncate">
+              <p className="text-white/80 mt-1 text-center truncate">
                 Enhanced Study Companion
               </p>
             </div>
-            {/* Header icon buttons */}
-            <div className="absolute right-0 top-0 flex flex-row items-center gap-2 z-20 h-full pr-0">
-              <Button
-                onClick={toggleDarkMode}
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/20 rounded-full p-2"
-              >
-                {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </Button>
+            {/* Right: Notifications and settings */}
+            <div className="flex flex-row items-center gap-2">
               <NotificationCenter />
               <Button
                 onClick={() => setShowSettings(true)}
                 variant="ghost"
                 size="sm"
                 className="text-white hover:bg-white/20 rounded-full p-2"
+                aria-label="Open settings"
               >
                 <SettingsIcon size={20} />
               </Button>
