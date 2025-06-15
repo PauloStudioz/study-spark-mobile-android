@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Flashcard } from "@/components/FlashcardStudy";
 
 /**
@@ -16,19 +16,24 @@ export function useFreeReviewQueue(flashcards: Flashcard[]) {
   // Repeat queue holds card indices that should be seen again after finishing current queue
   const [repeatQueue, setRepeatQueue] = useState<number[]>([]);
 
+  // Track when we just swapped to repeats so we can force next/re-render
+  const justSwappedRef = useRef(false);
+
   // On deck change or restart, reset everything
   useEffect(() => {
     setQueue(flashcards.map((_, i) => i));
     setIndex(0);
     setRepeatQueue([]);
+    justSwappedRef.current = false;
   }, [flashcards]);
 
-  // When queue is empty but repeatQueue exists, swap them (start the next cycle)
+  // When queue is empty but repeatQueue exists, swap them and go to the first repeat card
   useEffect(() => {
     if (queue.length === 0 && repeatQueue.length > 0) {
       setQueue(repeatQueue);
       setRepeatQueue([]);
       setIndex(0);
+      justSwappedRef.current = true;
     }
   }, [queue, repeatQueue]);
 
@@ -37,17 +42,35 @@ export function useFreeReviewQueue(flashcards: Flashcard[]) {
   const isDone = total === 0 || (queue.length === 0 && repeatQueue.length === 0);
 
   function next() {
-    setIndex(i => (queue.length === 0 ? 0 : (i + 1) % queue.length));
+    if (queue.length === 0 && repeatQueue.length > 0) {
+      // If swapping to repeat queue, ensure we advance to first card instantly
+      setQueue(repeatQueue);
+      setRepeatQueue([]);
+      setIndex(0);
+      justSwappedRef.current = false;
+      return;
+    }
+    setIndex(i => {
+      if (queue.length === 0) return 0;
+      if (i + 1 >= queue.length) {
+        return 0;
+      }
+      return i + 1;
+    });
   }
 
   function prev() {
-    setIndex(i => (queue.length === 0 ? 0 : (i === 0 ? queue.length - 1 : i - 1)));
+    setIndex(i => {
+      if (queue.length === 0) return 0;
+      return i === 0 ? queue.length - 1 : i - 1;
+    });
   }
 
   function restart() {
     setQueue(flashcards.map((_, i) => i));
     setIndex(0);
     setRepeatQueue([]);
+    justSwappedRef.current = false;
   }
 
   // Add a card index to be reviewed again after finishing the current run.

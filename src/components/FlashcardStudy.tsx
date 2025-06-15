@@ -132,6 +132,19 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         freeQueue.addRepeat(freeQueue.currIdx);
       }
       setShowBack(false);
+
+      // If we are at the last card and there are repeats, cycle to repeat queue immediately
+      if (
+        freeQueue.queue.length === 1 &&
+        freeQueue.index === 0 &&
+        freeQueue.repeatQueue &&
+        freeQueue.repeatQueue.length > 0
+      ) {
+        // Manually swap to repeat queue and go to first card
+        freeQueue.next();
+        return;
+      }
+
       freeQueue.next();
       return;
     }
