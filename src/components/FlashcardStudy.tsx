@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,12 +56,24 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 
   // Always use the queue for the current set of cards
   const {
-    queue, index, setIndex, repeatQueue, isDone,
+    queue, index, setIndex, repeatQueue, setRepeatQueue, isDone,
     currIdx, addRepeat, removeCurrentFromQueue, next, prev
   } = useFlashcardQueue(cardsToStudy);
 
   const card = cardsToStudy[currIdx] || cardsToStudy[0];
   const [showBack, setShowBack] = useState(false);
+
+  // ---- FIX: Free Review mode end - allow restart ----
+  const handleRestartFreeReview = () => {
+    // Reset queue and index so user can keep going through all cards
+    setIndex(0);
+    setRepeatQueue([]);
+    // By default, useFlashcardQueue will fill initial queue with all indices (see hook code)
+    // For the reset to work, we have to simulate a "reset": change freeReviewMode off then back on
+    setFreeReviewMode(false);
+    setTimeout(() => setFreeReviewMode(true), 0); // quick toggle
+    setShowBack(false);
+  };
 
   // Handle case when no cards available at all (empty deck)
   if (flashcards.length === 0) {
@@ -100,8 +111,11 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         <h2 className="text-xl font-bold">All done for now!</h2>
         <Badge variant="secondary">{deckName}</Badge>
         <div className="flex flex-col gap-3 items-center mt-4">
-          <Button className="bg-blue-600 rounded-xl" onClick={() => setFreeReviewMode(true)}>
-            Review All Cards
+          <Button
+            className="bg-purple-600 rounded-xl"
+            onClick={handleRestartFreeReview}
+          >
+            Restart Reviewing All Cards
           </Button>
           <Button variant="outline" className="mt-2 rounded-xl" onClick={onClose}>Back to Decks</Button>
         </div>
@@ -221,4 +235,3 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 };
 
 export default FlashcardStudy;
-
