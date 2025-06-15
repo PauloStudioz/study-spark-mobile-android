@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { Flashcard } from "./FlashcardStudy";
-import { SchedulerState } from "@/utils/ankiScheduler";
 
 interface DeckEditorProps {
   deck: {
@@ -24,14 +22,11 @@ const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onUpdateDeck, onBack }) =
 
   const handleAddCard = () => {
     if (!newCard.front.trim() || !newCard.back.trim()) return;
-    const baseState: SchedulerState = { interval: 1, ease: 2.5, repetitions: 0 };
     const now = new Date();
     const card: Flashcard = {
       id: Date.now().toString(),
       front: newCard.front,
       back: newCard.back,
-      state: baseState,
-      nextReview: now.toISOString(),
     };
     onUpdateDeck({ cards: [...deck.cards, card] });
     setNewCard({ front: "", back: "" });

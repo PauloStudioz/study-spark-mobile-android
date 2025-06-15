@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import DeckList from "./DeckList";
 import DeckEditor from "./DeckEditor";
 import FlashcardStudy, { Flashcard } from "./FlashcardStudy";
-import { SchedulerState } from "@/utils/ankiScheduler";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Plus, Sparkles } from "lucide-react";
