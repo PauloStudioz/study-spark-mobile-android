@@ -7,6 +7,7 @@ import { scheduleAnki, SchedulerState, ReviewGrade } from "@/utils/ankiScheduler
 import { useGamification } from "@/contexts/GamificationContext";
 import FlashcardCard from "./FlashcardCard";
 import { useFlashcardQueue } from "./hooks/useFlashcardQueue";
+import { useFreeReviewQueue } from "./hooks/useFreeReviewQueue";
 
 export interface Flashcard {
   id: string;
@@ -45,38 +46,33 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   onClose,
 }) => {
   const { reviewFlashcard, showNotification } = useGamification();
-
-  // New state: is user in "Free Review" mode? (studying all cards)
   const [freeReviewMode, setFreeReviewMode] = useState(false);
-
-  // Select cards depending on mode:
-  const now = new Date();
-  const dueCards = flashcards.filter(fc => new Date(fc.nextReview) <= now);
-  const cardsToStudy = freeReviewMode ? flashcards : dueCards;
-
-  // Always use the queue for the current set of cards
-  const {
-    queue, index, setIndex, repeatQueue, setRepeatQueue, isDone,
-    currIdx, addRepeat, removeCurrentFromQueue, next, prev
-  } = useFlashcardQueue(cardsToStudy);
-
-  const card = cardsToStudy[currIdx] || cardsToStudy[0];
   const [showBack, setShowBack] = useState(false);
 
-  // ---- FIX: Free Review mode end - allow restart ----
-  const handleRestartFreeReview = () => {
-    // Reset queue and index so user can keep going through all cards
-    setIndex(0);
-    setRepeatQueue([]);
-    // By default, useFlashcardQueue will fill initial queue with all indices (see hook code)
-    // For the reset to work, we have to simulate a "reset": change freeReviewMode off then back on
-    setFreeReviewMode(false);
-    setTimeout(() => setFreeReviewMode(true), 0); // quick toggle
-    setShowBack(false);
-  };
+  // Regular due cards
+  const now = new Date();
+  const dueCards = flashcards.filter(fc => new Date(fc.nextReview) <= now);
 
-  // Handle case when no cards available at all (empty deck)
-  if (flashcards.length === 0) {
+  // Use correct queue logic for mode
+  const regularQueue = useFlashcardQueue(dueCards);
+  const freeQueue = useFreeReviewQueue(flashcards);
+
+  // What queue/state do we use?
+  const isEmptyDeck = flashcards.length === 0;
+  const isRegularDone = !freeReviewMode && (dueCards.length === 0 || regularQueue.isDone);
+  const isFreeReview = freeReviewMode;
+  const freeHasCards = flashcards.length > 0;
+
+  // Pick the correct card/set
+  const card = freeReviewMode
+    ? flashcards[freeQueue.currIdx] || flashcards[0]
+    : dueCards[regularQueue.currIdx] || dueCards[0];
+
+  const totalCards = freeReviewMode ? flashcards.length : dueCards.length;
+  const currIndex = freeReviewMode ? freeQueue.index : regularQueue.index;
+  
+  // Handle "empty deck" case
+  if (isEmptyDeck) {
     return (
       <div className="text-center space-y-4">
         <h2 className="text-xl font-bold">No cards in this deck</h2>
@@ -93,9 +89,9 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
       <div className="text-center space-y-4">
         <h2 className="text-xl font-bold">No cards available for review 🎉</h2>
         <Badge variant="secondary">{deckName}</Badge>
-        <div className="text-gray-600">Check back later or add more cards to this deck.</div>
+        <div className="text-gray-600">Check back later or review all cards.</div>
         <div className="flex flex-col gap-3 items-center mt-4">
-          <Button className="bg-blue-600 rounded-xl" onClick={() => setFreeReviewMode(true)}>
+          <Button className="bg-blue-600 rounded-xl" onClick={() => { setFreeReviewMode(true); setShowBack(false); }}>
             Review All Cards
           </Button>
           <Button variant="outline" className="mt-2 rounded-xl" onClick={onClose}>Back to Decks</Button>
@@ -104,8 +100,8 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     );
   }
 
-  // If not in free review, and we finished all due cards (queue is empty, not in freeReview)
-  if (!freeReviewMode && isDone) {
+  // Regular review, all done, prompt user to go into free review mode
+  if (!freeReviewMode && regularQueue.isDone) {
     return (
       <div className="text-center space-y-4">
         <h2 className="text-xl font-bold">All done for now!</h2>
@@ -113,9 +109,9 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         <div className="flex flex-col gap-3 items-center mt-4">
           <Button
             className="bg-purple-600 rounded-xl"
-            onClick={handleRestartFreeReview}
+            onClick={() => { setFreeReviewMode(true); setShowBack(false); }}
           >
-            Restart Reviewing All Cards
+            Review All Cards
           </Button>
           <Button variant="outline" className="mt-2 rounded-xl" onClick={onClose}>Back to Decks</Button>
         </div>
@@ -123,16 +119,9 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     );
   }
 
-  // Free review mode: end message when finished all cards
-  if (freeReviewMode && isDone) {
-    return (
-      <div className="text-center space-y-4">
-        <h2 className="text-xl font-bold">You finished reviewing all cards!</h2>
-        <Badge variant="secondary">{deckName}</Badge>
-        <Button className="mt-6" onClick={onClose}>Back to Decks</Button>
-      </div>
-    );
-  }
+  // Free review mode, all cards - allow endless cycle, restart puts you back at first card
+  // (We hide this message, as all navigation is now looped, so user never "finishes", can keep going)
+  // Instead, we always show the controls.
 
   const getDiffLabel = (grade: ReviewGrade) => {
     if (grade === "again") return "hard";
@@ -143,18 +132,14 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   };
 
   const review = (grade: ReviewGrade) => {
-    // If in free review mode, don't update scheduler or gamification
     if (freeReviewMode) {
       setShowBack(false);
-      removeCurrentFromQueue();
+      freeQueue.next();
       return;
     }
-
     let xp = GRADE_XP[grade];
     reviewFlashcard(getDiffLabel(grade));
     if (xp > 0) showNotification(`+${xp} XP (flashcards)`);
-
-    // Schedule next review
     const newState = scheduleAnki(card.state, grade);
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + newState.interval);
@@ -165,10 +150,10 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     });
 
     if (grade === "hard") {
-      addRepeat(currIdx);
+      regularQueue.addRepeat(regularQueue.currIdx);
     }
     setShowBack(false);
-    removeCurrentFromQueue();
+    regularQueue.removeCurrentFromQueue();
   };
 
   return (
@@ -179,7 +164,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         </Button>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="px-3 py-1">
-            {queue.length > 0 ? index + 1 : 0} / {queue.length}
+            {(totalCards > 0 ? currIndex + 1 : 0)} / {totalCards}
           </Badge>
           {freeReviewMode && (
             <Badge variant="outline" className="ml-2 text-blue-700 border-blue-400">
@@ -189,6 +174,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         </div>
       </div>
 
+      {/* Always show card */}
       <FlashcardCard
         front={card.front}
         back={card.back}
@@ -196,6 +182,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         onToggle={() => setShowBack(b => !b)}
       />
 
+      {/* Review/answer buttons */}
       {showBack && (
         <div className="flex justify-center space-x-2">
           {reviewButtons.map(btn => (
@@ -214,22 +201,42 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 
       <div className="flex justify-between">
         <Button
-          onClick={prev}
+          onClick={freeReviewMode ? freeQueue.prev : regularQueue.prev}
           variant="outline"
           className="rounded-xl px-6"
-          disabled={queue.length === 0}
         >
           <ChevronLeft size={16} /> Previous
         </Button>
-        <Button
-          onClick={next}
-          variant="outline"
-          className="rounded-xl px-6"
-          disabled={queue.length === 0}
-        >
-          Next <ChevronRight size={16} />
-        </Button>
+        <div className="flex gap-2 items-center">
+          {freeReviewMode && (
+            <Button
+              variant="outline"
+              onClick={() => { freeQueue.restart(); setShowBack(false); }}
+              className="rounded-xl px-6"
+            >Restart</Button>
+          )}
+          <Button
+            onClick={freeReviewMode ? freeQueue.next : regularQueue.next}
+            variant="outline"
+            className="rounded-xl px-6"
+          >
+            Next <ChevronRight size={16} />
+          </Button>
+        </div>
       </div>
+
+      {/* Exit button for free review */}
+      {freeReviewMode && (
+        <div className="flex justify-center mt-2">
+          <Button
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => setFreeReviewMode(false)}
+          >
+            Exit Free Review
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
