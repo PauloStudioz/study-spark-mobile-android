@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Flashcard } from "@/components/FlashcardStudy";
 
@@ -95,5 +94,6 @@ export function useFreeReviewQueue(flashcards: Flashcard[]) {
     addRepeat,
     removeCurrentFromQueue,
     queue,
+    repeatQueue,
   };
 }
