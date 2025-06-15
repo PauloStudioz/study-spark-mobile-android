@@ -81,7 +81,7 @@ const AppContent = () => {
         >
           <div className="flex items-center justify-between w-full relative">
             {/* Left: Dark mode button */}
-            <div className="flex items-center">
+            <div className="flex items-center z-10">
               <Button
                 onClick={toggleDarkMode}
                 variant="ghost"
@@ -93,21 +93,21 @@ const AppContent = () => {
               </Button>
             </div>
             {/* Center: Title + subtitle */}
-            <div className="flex flex-col items-center flex-1 min-w-0">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center w-full pointer-events-none select-none">
               <motion.h1
-                className="text-2xl font-bold text-center truncate"
+                className="text-2xl font-bold text-center truncate pointer-events-none"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
                 StudyMate Pro
               </motion.h1>
-              <p className="text-white/80 mt-1 text-center truncate">
+              <p className="text-white/80 mt-1 text-center truncate pointer-events-none">
                 Enhanced Study Companion
               </p>
             </div>
             {/* Right: Notifications and settings */}
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row items-center gap-2 z-10">
               <NotificationCenter />
               <Button
                 onClick={() => setShowSettings(true)}
