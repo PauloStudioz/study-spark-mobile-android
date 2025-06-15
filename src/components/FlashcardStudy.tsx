@@ -1,22 +1,19 @@
 import React, { useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { scheduleAnki, SchedulerState, ReviewGrade } from "@/utils/ankiScheduler";
-import { useGamification } from "@/contexts/GamificationContext";
 import FlashcardStudyCard from "./FlashcardStudyCard";
 import { useFlashcardQueue } from "./hooks/useFlashcardQueue";
 import { useFreeReviewQueue } from "./hooks/useFreeReviewQueue";
 import { useHaptics } from "./hooks/useHaptics";
-import AutoFlipControl from "./AutoFlipControl";
-import { useAutoFlipTimer } from "./hooks/useAutoFlipTimer";
 import { useShakeToRestart } from "./hooks/useShakeToRestart";
 
 export interface Flashcard {
   id: string;
   front: string;
   back: string;
-  state: SchedulerState;
-  nextReview: string; // ISO String date
+  // Remove state and nextReview, but keep for backward compatibility for now
+  state?: any;
+  nextReview?: string;
 }
 
 interface FlashcardStudyProps {
@@ -27,17 +24,9 @@ interface FlashcardStudyProps {
   onImportFlashcards?: (cards: Flashcard[]) => void;
 }
 
-const GRADE_XP: Record<ReviewGrade, number> = {
-  again: 0,
-  hard: 3,
-  good: 7,
-  easy: 10,
-};
-
-const reviewButtons: { label: string; grade: ReviewGrade; color: string; xp: number }[] = [
-  { label: "Hard", grade: "hard", color: "bg-yellow-600", xp: GRADE_XP["hard"] },
-  { label: "Good", grade: "good", color: "bg-blue-600", xp: GRADE_XP["good"] },
-  { label: "Easy", grade: "easy", color: "bg-green-600", xp: GRADE_XP["easy"] },
+// Simplified review buttons for manual mode
+const reviewButtons = [
+  { label: "Reveal", grade: "show", color: "bg-blue-600", xp: 0 },
 ];
 
 const FullscreenIcon = ({ isFS }: { isFS: boolean }) => (
@@ -53,12 +42,9 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   onClose,
   onImportFlashcards,
 }) => {
-  const { reviewFlashcard, showNotification } = useGamification();
   const [freeReviewMode, setFreeReviewMode] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [autoFlip, setAutoFlip] = useState(false);
-  const [autoFlipInterval, setAutoFlipInterval] = useState(5);
   const { vibrate } = useHaptics();
 
   // Shake to restart handler
@@ -70,64 +56,50 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     vibrate
   );
 
-  // Regular due cards
-  const now = new Date();
-  const dueCards = flashcards.filter(fc => new Date(fc.nextReview) <= now);
+  // All cards are availble always since no scheduling now
+  const allCards = flashcards;
 
   // Queues for card modes
-  const regularQueue = useFlashcardQueue(dueCards);
-  const freeQueue = useFreeReviewQueue(flashcards);
+  const regularQueue = useFlashcardQueue(allCards);
+  const freeQueue = useFreeReviewQueue(allCards);
 
   const isEmptyDeck = flashcards.length === 0;
-  const isRegularDone = !freeReviewMode && (dueCards.length === 0 || regularQueue.isDone);
 
   const card = freeReviewMode
     ? flashcards[freeQueue.currIdx] || flashcards[0]
-    : dueCards[regularQueue.currIdx] || dueCards[0];
+    : allCards[regularQueue.currIdx] || allCards[0];
 
-  const totalCards = freeReviewMode ? flashcards.length : dueCards.length;
+  const totalCards = freeReviewMode ? flashcards.length : allCards.length;
   const currIndex = freeReviewMode ? freeQueue.index : regularQueue.index;
 
-  // --- Auto-flip countdown (custom hook, manages timer & visible countdown)
-  const [secondsLeft, resetAutoFlipTimer] = useAutoFlipTimer({
-    enabled: autoFlip && !showBack,
-    duration: autoFlipInterval,
-    onElapsed: () => setShowBack(true),
-    resetDeps: [card?.id, autoFlipInterval, autoFlip],
-  });
-
-  // --- Enhanced card navigation that always resets side & timer
+  // Enhanced card navigation
   const handleNext = useCallback(() => {
     setShowBack(false);
-    resetAutoFlipTimer();
     if (freeReviewMode) {
       freeQueue.next();
     } else {
       regularQueue.next();
     }
-  }, [freeReviewMode, freeQueue, regularQueue, resetAutoFlipTimer]);
+  }, [freeReviewMode, freeQueue, regularQueue]);
 
   const handlePrev = useCallback(() => {
     setShowBack(false);
-    resetAutoFlipTimer();
     if (freeReviewMode) {
       freeQueue.prev();
     } else {
       regularQueue.prev();
     }
-  }, [freeReviewMode, freeQueue, regularQueue, resetAutoFlipTimer]);
+  }, [freeReviewMode, freeQueue, regularQueue]);
 
   const handleRestart = useCallback(() => {
     setShowBack(false);
-    resetAutoFlipTimer();
     freeQueue.restart();
-  }, [freeQueue, resetAutoFlipTimer]);
+  }, [freeQueue]);
 
   const handleExitFree = useCallback(() => {
     setShowBack(false);
-    resetAutoFlipTimer();
     setFreeReviewMode(false);
-  }, [resetAutoFlipTimer]);
+  }, []);
 
   // Handle "empty deck" case
   if (isEmptyDeck) {
@@ -141,108 +113,15 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
     );
   }
 
-  // If not in free review, but no cards are due for review
-  if (!freeReviewMode && dueCards.length === 0) {
-    return (
-      <div className="text-center space-y-4">
-        <h2 className="text-xl font-bold">No cards available for review 🎉</h2>
-        <Badge variant="secondary">{deckName}</Badge>
-        <div className="text-gray-600">Check back later or review all cards.</div>
-        <div className="flex flex-col gap-3 items-center mt-4">
-          <Button className="bg-blue-600 rounded-xl" onClick={() => { setFreeReviewMode(true); setShowBack(false); }}>
-            Review All Cards
-          </Button>
-          <Button variant="outline" className="mt-2 rounded-xl" onClick={onClose}>Back to Decks</Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Regular review, all done, prompt user to go into free review mode
-  if (!freeReviewMode && regularQueue.isDone) {
-    return (
-      <div className="text-center space-y-4">
-        <h2 className="text-xl font-bold">All done for now!</h2>
-        <Badge variant="secondary">{deckName}</Badge>
-        <div className="flex flex-col gap-3 items-center mt-4">
-          <Button
-            className="bg-purple-600 rounded-xl"
-            onClick={() => { setFreeReviewMode(true); setShowBack(false); }}
-          >
-            Review All Cards
-          </Button>
-          <Button variant="outline" className="mt-2 rounded-xl" onClick={onClose}>Back to Decks</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const getDiffLabel = (grade: ReviewGrade) => {
-    if (grade === "hard") return "hard";
-    if (grade === "good") return "medium";
-    if (grade === "easy") return "easy";
-    return "medium";
-  };
-
-  // Handle answer grading for either mode
-  const review = (grade: ReviewGrade) => {
-    vibrate(grade === "easy" ? "Light" : grade === "good" ? "Medium" : "Heavy");
-    if (freeReviewMode) {
-      if (grade === "hard") {
-        freeQueue.addRepeat(freeQueue.currIdx);
-      }
-      setShowBack(false);
-      resetAutoFlipTimer();
-      if (
-        freeQueue.queue.length === 1 &&
-        freeQueue.index === 0 &&
-        freeQueue.repeatQueue &&
-        freeQueue.repeatQueue.length > 0
-      ) {
-        freeQueue.next();
-        return;
-      }
-      freeQueue.next();
-      return;
-    }
-    let xp = GRADE_XP[grade];
-    reviewFlashcard(getDiffLabel(grade));
-    if (xp > 0) showNotification(`+${xp} XP (flashcards)`);
-    const newState = scheduleAnki(card.state, grade);
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newState.interval);
-    onUpdateCard(card.id, {
-      state: newState,
-      nextReview: nextReview.toISOString(),
-    });
-    if (grade === "hard") {
-      regularQueue.addRepeat(regularQueue.currIdx);
-    }
-    setShowBack(false);
-    resetAutoFlipTimer();
-    regularQueue.removeCurrentFromQueue();
-  };
-
-  // Fullscreen support: expand card UI
-  const fsClass = isFullscreen
-    ? "fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-all"
-    : "";
-
+  // Only show free review controls/main UI, ignore all "done" logic
   return (
     <div>
-      {/* Fullscreen & auto-flip controls */}
+      {/* Fullscreen control only */}
       <div className="flex justify-between mb-3">
         <Button onClick={onClose} variant="outline" className="rounded-xl">
           &larr; Back to Decks
         </Button>
         <div className="flex gap-2">
-          <AutoFlipControl
-            isActive={autoFlip}
-            setIsActive={setAutoFlip}
-            interval={autoFlipInterval}
-            setInterval={setAutoFlipInterval}
-            secondsLeft={autoFlip ? secondsLeft : undefined}
-          />
           <Button
             variant={isFullscreen ? "default" : "outline"}
             className="rounded-xl"
@@ -252,13 +131,16 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
           </Button>
         </div>
       </div>
-      <div className={fsClass}>
+      <div className={isFullscreen
+        ? "fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-all"
+        : ""}
+      >
         <FlashcardStudyCard
           card={card}
           showBack={showBack}
           setShowBack={setShowBack}
           reviewButtons={reviewButtons}
-          onReview={review}
+          onReview={() => setShowBack(true)}
           freeReviewMode={freeReviewMode}
           onNext={handleNext}
           onPrev={handlePrev}

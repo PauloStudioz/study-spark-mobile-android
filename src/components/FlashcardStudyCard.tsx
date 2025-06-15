@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import FlashcardCard from "./FlashcardCard";
-import { ReviewGrade } from "@/utils/ankiScheduler";
 
 interface FlashcardStudyCardProps {
   card: { front: string; back: string };
   showBack: boolean;
   setShowBack: (show: boolean) => void;
-  reviewButtons: { label: string; grade: ReviewGrade; color: string; xp: number }[];
-  onReview: (grade: ReviewGrade) => void;
+  reviewButtons: { label: string; grade: string; color: string; xp: number }[];
+  onReview: () => void;
   freeReviewMode: boolean;
   onNext: () => void;
   onPrev: () => void;
@@ -26,7 +25,6 @@ const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
   card,
   showBack,
   setShowBack,
-  reviewButtons,
   onReview,
   freeReviewMode,
   onNext,
@@ -59,19 +57,14 @@ const FlashcardStudyCard: React.FC<FlashcardStudyCardProps> = ({
       onToggle={() => setShowBack(!showBack)}
     />
 
-    {showBack && (
+    {!showBack && (
       <div className="flex justify-center space-x-2">
-        {reviewButtons.map((btn) => (
-          <Button
-            key={btn.grade}
-            className={btn.color + " rounded-xl px-4"}
-            onClick={() => onReview(btn.grade)}
-          >
-            {btn.label} {(!freeReviewMode && btn.xp > 0) && (
-              <span className="text-xs opacity-70 ml-1">+{btn.xp}XP</span>
-            )}
-          </Button>
-        ))}
+        <Button
+          className="bg-blue-600 rounded-xl px-4"
+          onClick={onReview}
+        >
+          Reveal Answer
+        </Button>
       </div>
     )}
 
