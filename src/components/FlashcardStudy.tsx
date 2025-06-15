@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,35 +47,78 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 }) => {
   const { reviewFlashcard, showNotification } = useGamification();
 
+  // New state: is user in "Free Review" mode? (studying all cards)
+  const [freeReviewMode, setFreeReviewMode] = useState(false);
+
+  // Select cards depending on mode:
+  const now = new Date();
+  const dueCards = flashcards.filter(fc => new Date(fc.nextReview) <= now);
+  const cardsToStudy = freeReviewMode ? flashcards : dueCards;
+
+  // Always use the queue for the current set of cards
   const {
     queue, index, setIndex, repeatQueue, isDone,
     currIdx, addRepeat, removeCurrentFromQueue, next, prev
-  } = useFlashcardQueue(flashcards);
+  } = useFlashcardQueue(cardsToStudy);
 
-  const dueCards = flashcards.filter(fc => new Date(fc.nextReview) <= new Date());
-  const card = dueCards[currIdx] || dueCards[0];
+  const card = cardsToStudy[currIdx] || cardsToStudy[0];
   const [showBack, setShowBack] = useState(false);
 
-  // Handle case when no due cards are available
-  if (dueCards.length === 0) {
+  // Handle case when no cards available at all (empty deck)
+  if (flashcards.length === 0) {
     return (
       <div className="text-center space-y-4">
-        <h2 className="text-xl font-bold">No cards available for review 🎉</h2>
+        <h2 className="text-xl font-bold">No cards in this deck</h2>
         <Badge variant="secondary">{deckName}</Badge>
-        <div className="text-gray-600">Check back later or add more cards to this deck.</div>
+        <div className="text-gray-600">Add some flashcards to get started.</div>
         <Button className="mt-6" onClick={onClose}>Back to Decks</Button>
       </div>
     );
   }
 
-  if (isDone)
+  // If not in free review, but no cards are due for review
+  if (!freeReviewMode && dueCards.length === 0) {
+    return (
+      <div className="text-center space-y-4">
+        <h2 className="text-xl font-bold">No cards available for review 🎉</h2>
+        <Badge variant="secondary">{deckName}</Badge>
+        <div className="text-gray-600">Check back later or add more cards to this deck.</div>
+        <div className="flex flex-col gap-3 items-center mt-4">
+          <Button className="bg-blue-600 rounded-xl" onClick={() => setFreeReviewMode(true)}>
+            Review All Cards
+          </Button>
+          <Button variant="outline" className="mt-2 rounded-xl" onClick={onClose}>Back to Decks</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If not in free review, and we finished all due cards (queue is empty, not in freeReview)
+  if (!freeReviewMode && isDone) {
     return (
       <div className="text-center space-y-4">
         <h2 className="text-xl font-bold">All done for now!</h2>
         <Badge variant="secondary">{deckName}</Badge>
+        <div className="flex flex-col gap-3 items-center mt-4">
+          <Button className="bg-blue-600 rounded-xl" onClick={() => setFreeReviewMode(true)}>
+            Review All Cards
+          </Button>
+          <Button variant="outline" className="mt-2 rounded-xl" onClick={onClose}>Back to Decks</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Free review mode: end message when finished all cards
+  if (freeReviewMode && isDone) {
+    return (
+      <div className="text-center space-y-4">
+        <h2 className="text-xl font-bold">You finished reviewing all cards!</h2>
+        <Badge variant="secondary">{deckName}</Badge>
         <Button className="mt-6" onClick={onClose}>Back to Decks</Button>
       </div>
     );
+  }
 
   const getDiffLabel = (grade: ReviewGrade) => {
     if (grade === "again") return "hard";
@@ -85,6 +129,13 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   };
 
   const review = (grade: ReviewGrade) => {
+    // If in free review mode, don't update scheduler or gamification
+    if (freeReviewMode) {
+      setShowBack(false);
+      removeCurrentFromQueue();
+      return;
+    }
+
     let xp = GRADE_XP[grade];
     reviewFlashcard(getDiffLabel(grade));
     if (xp > 0) showNotification(`+${xp} XP (flashcards)`);
@@ -112,9 +163,16 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
         <Button onClick={onClose} variant="outline" className="rounded-xl">
           <ChevronLeft size={16} /> Back to Decks
         </Button>
-        <Badge variant="secondary" className="px-3 py-1">
-          {queue.length > 0 ? index + 1 : 0} / {queue.length}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="px-3 py-1">
+            {queue.length > 0 ? index + 1 : 0} / {queue.length}
+          </Badge>
+          {freeReviewMode && (
+            <Badge variant="outline" className="ml-2 text-blue-700 border-blue-400">
+              Free Review Mode
+            </Badge>
+          )}
+        </div>
       </div>
 
       <FlashcardCard
@@ -132,7 +190,7 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
               className={btn.color + " rounded-xl px-4"}
               onClick={() => review(btn.grade)}
             >
-              {btn.label} {btn.xp > 0 && (
+              {btn.label} {(!freeReviewMode && btn.xp > 0) && (
                 <span className="text-xs opacity-70 ml-1">+{btn.xp}XP</span>
               )}
             </Button>
@@ -163,3 +221,4 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
 };
 
 export default FlashcardStudy;
+
