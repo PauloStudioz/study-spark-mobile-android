@@ -19,39 +19,61 @@ export function useAutoFlipTimer({
   const [secondsLeft, setSecondsLeft] = useState(duration);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper: Clears any interval
-  const clearTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+  // Logging helpers for debugging
+  const log = (...args: any[]) => {
+    // Uncomment to debug:
+    // console.log("[useAutoFlipTimer]", ...args);
   };
 
-  // Start timer logic (shared by effect and reset)
+  // Always clear timer (helper)
+  const clearTimer = useCallback(() => {
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      log("Cleared timer");
+      intervalRef.current = null;
+    }
+  }, []);
+
+  // Start timer, always cleans up previous first
   const startTimer = useCallback(() => {
+    log("startTimer called. enabled:", enabled, "duration:", duration);
+
     clearTimer();
     setSecondsLeft(duration);
-    if (!enabled) return;
-    let tick = 0;
+
+    if (!enabled) {
+      log("Timer not enabled, not starting.");
+      return;
+    }
+
+    let count = duration;
+    setSecondsLeft(count);
+
     intervalRef.current = setInterval(() => {
-      tick += 1;
-      setSecondsLeft(duration - tick);
-      if (tick >= duration) {
+      count -= 1;
+      setSecondsLeft(count);
+      log("Tick:", count);
+
+      if (count <= 0) {
         clearTimer();
+        log("Timer elapsed, calling onElapsed");
         onElapsed();
       }
     }, 1000);
-  }, [duration, enabled, onElapsed]);
 
-  // Effect: Start timer when dependencies change
+    log("Timer started.");
+  }, [enabled, duration, onElapsed, clearTimer]);
+
+  // Recreate timer whenever the deps change (card, interval, etc)
   useEffect(() => {
     startTimer();
     return clearTimer;
     // eslint-disable-next-line
   }, [startTimer, ...resetDeps]);
 
-  // Manual reset (for navigation)
+  // Manual timer reset for navigation
   const resetTimer = useCallback(() => {
+    log("Manual resetTimer called.");
     startTimer();
   }, [startTimer]);
 
