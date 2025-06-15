@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,14 +24,12 @@ interface FlashcardStudyProps {
 
 // XP by grade (must match GamificationContext as much as possible)
 const GRADE_XP: Record<ReviewGrade, number> = {
-  again: 0,
   hard: 3,
   good: 7,
   easy: 10,
 };
 
 const reviewButtons: { label: string; grade: ReviewGrade; color: string; xp: number }[] = [
-  { label: "Again", grade: "again", color: "bg-red-500", xp: GRADE_XP["again"] },
   { label: "Hard", grade: "hard", color: "bg-yellow-600", xp: GRADE_XP["hard"] },
   { label: "Good", grade: "good", color: "bg-blue-600", xp: GRADE_XP["good"] },
   { label: "Easy", grade: "easy", color: "bg-green-600", xp: GRADE_XP["easy"] },
@@ -117,7 +114,6 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   }
 
   const getDiffLabel = (grade: ReviewGrade) => {
-    if (grade === "again") return "hard";
     if (grade === "hard") return "hard";
     if (grade === "good") return "medium";
     if (grade === "easy") return "easy";
@@ -127,20 +123,20 @@ const FlashcardStudy: React.FC<FlashcardStudyProps> = ({
   // Handle answer grading for either mode
   const review = (grade: ReviewGrade) => {
     if (freeReviewMode) {
-      // If "Hard" or "Again", add card to repeat queue in free review mode:
-      if (grade === "hard" || grade === "again") {
+      // If "Hard", add card to repeat queue in free review mode:
+      if (grade === "hard") {
         freeQueue.addRepeat(freeQueue.currIdx);
       }
       setShowBack(false);
 
-      // If we are at the last card and there are repeats, cycle to repeat queue immediately
+      // If currently on the last card of the main queue and there are cards in the repeatQueue
       if (
         freeQueue.queue.length === 1 &&
         freeQueue.index === 0 &&
         freeQueue.repeatQueue &&
         freeQueue.repeatQueue.length > 0
       ) {
-        // Manually swap to repeat queue and go to first card
+        // Swap to repeat queue and start over with first hard card
         freeQueue.next();
         return;
       }
