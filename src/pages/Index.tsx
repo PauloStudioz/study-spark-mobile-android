@@ -76,16 +76,18 @@ const AppContent = () => {
             ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600' 
             : `bg-gradient-to-r ${colors.headerGradient}`
         } text-white px-4 py-4 rounded-b-3xl shadow-lg relative`}>
-          <motion.h1 
-            className="text-2xl font-bold text-center"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            StudyMate Pro
-          </motion.h1>
-          <p className="text-center text-white/80 mt-1">Enhanced Study Companion</p>
-          
+          {/* The content stack gets right padding so header text can't overlap the icons */}
+          <div className="pr-24 sm:pr-24">
+            <motion.h1 
+              className="text-2xl font-bold text-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              StudyMate Pro
+            </motion.h1>
+            <p className="text-center text-white/80 mt-1">Enhanced Study Companion</p>
+          </div>
           {/* Header icon buttons: use flex, gap, and right-side absolute alignment, responsive fixes */}
           <div className="absolute top-4 right-4 flex flex-row items-center gap-2 z-20">
             <Button
