@@ -11,6 +11,7 @@ export interface MathStep {
   step: string;
   result: string;
   explanation: string;
+  opType?: string;
   isIntermediate?: boolean;
 }
 
@@ -19,24 +20,24 @@ export const calculateWithSteps = (expression: string): { result: string; steps:
     const normExpr = normalizeExpression(expression);
     const steps: MathStep[] = [];
 
-    // 1. Show the original expression
+    // 1. Original input
     steps.push({
       step: expression,
       result: expression,
-      explanation: 'Original expression you entered',
+      explanation: 'Original expression you entered.',
     });
 
-    // 2. Show normalized if different
+    // 2. Normalize and show if changed
     if (normExpr !== expression) {
       steps.push({
         step: normExpr,
         result: normExpr,
-        explanation: 'Converted to calculator-ready math syntax.',
+        explanation: 'Expression converted to calculator-friendly format.',
         isIntermediate: true,
       });
     }
 
-    // 3. Simplification preview, only if meaningful
+    // 3. Show preview of simplification only if meaningful
     const parsed = parse(normExpr);
     const simplified = hasComplexOperations(normExpr) ? simplify(parsed) : parsed;
     if (
@@ -51,25 +52,25 @@ export const calculateWithSteps = (expression: string): { result: string; steps:
       });
     }
 
-    // 4. Show detailed arithmetic or function breakdown
+    // 4. Detailed arithmetic step-by-step (the big improvement!)
     if (hasMultipleOperations(normExpr) || hasComplexOperations(normExpr)) {
-      // For pure arithmetic, show all PEMDAS steps
       const breakdown = arithmeticStepBreakdown(normExpr);
       breakdown.forEach((step, i) => {
+        // Give a much more visible, easy-to-understand step index and keep all helpful explanation content
         steps.push({
           ...step,
-          explanation: `Step ${steps.length}: ${step.explanation}`,
+          explanation: `Step #${steps.length}: ${step.explanation}`,
         });
       });
     }
 
-    // 5. Final result
+    // 5. Final answer (always at the end)
     const result = evaluate(normExpr);
     const resultString = formatResult(result);
     steps.push({
       step: `= ${resultString}`,
       result: resultString,
-      explanation: 'Final answer after evaluating all steps above.',
+      explanation: 'Final answer. All calculations above were performed step-by-step with rules of precedence followed.',
     });
 
     return { result: resultString, steps };
@@ -93,43 +94,43 @@ export const solveEquation = (equation: string): { steps: MathStep[]; solution?:
     
     if (equation.includes('=')) {
       const [left, right] = equation.split('=');
-      
+
       steps.push({
         step: equation,
         result: equation,
-        explanation: 'Original equation to solve'
+        explanation: 'Original equation to solve.',
       });
-      
+
       // Try to solve simple linear equations of the form ax + b = c
       if (left.includes('x') && !right.includes('x')) {
         steps.push({
           step: `${left} = ${right}`,
           result: `Isolate x`,
-          explanation: 'Rearrange to solve for x',
-          isIntermediate: true
+          explanation: 'Rearrange to solve for x.',
+          isIntermediate: true,
         });
-        
+
         try {
           const solution = evaluate(right);
           steps.push({
             step: `x = ${solution}`,
             result: solution.toString(),
-            explanation: 'Solution found'
+            explanation: 'Solution found.',
           });
-          
+
           return { steps, solution: solution.toString() };
         } catch {
           steps.push({
             step: equation,
             result: 'Cannot solve',
-            explanation: 'This equation is too complex for automatic solving'
+            explanation: 'This equation is too complex for automatic solving.',
           });
         }
       } else {
         steps.push({
           step: equation,
           result: 'Cannot solve',
-          explanation: 'Equation solving for this type is not supported yet'
+          explanation: 'Equation solving for this type is not supported yet.',
         });
       }
     }
@@ -140,7 +141,7 @@ export const solveEquation = (equation: string): { steps: MathStep[]; solution?:
       steps: [{
         step: equation,
         result: 'Error',
-        explanation: 'Cannot solve equation - invalid format'
+        explanation: 'Cannot solve equation - invalid format.',
       }]
     };
   }
