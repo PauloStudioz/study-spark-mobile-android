@@ -1,0 +1,26 @@
+import { QuoteData } from "./quotesList";
+
+export const toxicQuotes: QuoteData[] = [
+  { text: "No one cares about your problems, work harder.", author: "Toxic Motivation" },
+  { text: "Stay broke, or get to work.", author: "Toxic Motivation" },
+  { text: "Your comfort zone will kill you.", author: "Toxic Motivation" },
+  { text: "Your feelings don’t pay the bills.", author: "Toxic Motivation" },
+  { text: "If you want sympathy, look in the dictionary between sh*t and syphilis.", author: "Toxic Motivation" },
+  { text: "Go cry, then get back to work.", author: "Toxic Motivation" },
+  { text: "Life doesn’t care if you’re tired.", author: "Toxic Motivation" },
+  { text: "Nobody is coming to save you.", author: "Toxic Motivation" },
+  { text: "Get up. Nobody is going to do it for you.", author: "Toxic Motivation" },
+  { text: "You’re losing because you’re not working hard enough.", author: "Toxic Motivation" },
+  { text: "Don’t be upset about the results you didn’t get from the work you didn’t do.", author: "Toxic Motivation" },
+  { text: "Excuses don’t burn calories.", author: "Toxic Motivation" },
+  { text: "Dreams don’t work unless you do. No exceptions.", author: "Toxic Motivation" },
+  { text: "Be stronger than your excuses.", author: "Toxic Motivation" },
+  { text: "Work until your haters ask if you’re hiring.", author: "Toxic Motivation" },
+  { text: "Your laziness is your enemy.", author: "Toxic Motivation" },
+  { text: "Respect is earned, not given. Start earning.", author: "Toxic Motivation" },
+  { text: "Victims make excuses. Winners find a way.", author: "Toxic Motivation" },
+  { text: "Don’t expect results without pain.", author: "Toxic Motivation" },
+  { text: "Discipline > motivation. Show up anyway.", author: "Toxic Motivation" },
+  { text: "Nobody cares. Push through anyway.", author: "Toxic Motivation" },
+  { text: "Be so good they can’t ignore you—even if they hate you.", author: "Toxic Motivation" },
+];
