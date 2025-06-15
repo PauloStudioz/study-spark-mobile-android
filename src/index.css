@@ -97,7 +97,16 @@
     @apply border-border;
   }
 
+  html, body {
+    font-size: 100%;
+  }
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Apply font scaling for mobile via JS/CSS var fallback in case of style block */
+  [data-font-scale="0.85"] { font-size: 85% !important; }
+  [data-font-scale="1"] { font-size: 100% !important; }
+  [data-font-scale="1.125"] { font-size: 112.5% !important; }
+  [data-font-scale="1.25"] { font-size: 125% !important; }
 }

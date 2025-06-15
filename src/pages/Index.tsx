@@ -23,6 +23,7 @@ import PWAInstaller from '../components/PWAInstaller';
 import FloatingWidgets from '../components/FloatingWidgets';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { GamificationProvider } from '../contexts/GamificationContext';
+import { FontScaleProvider } from '@/contexts/FontScaleContext';
 
 const AppContent = () => {
   const { getThemeColors, isDarkMode, toggleDarkMode } = useTheme();
@@ -138,7 +139,9 @@ const Index = () => {
   return (
     <ThemeProvider>
       <GamificationProvider>
-        <AppContent />
+        <FontScaleProvider>
+          <AppContent />
+        </FontScaleProvider>
       </GamificationProvider>
     </ThemeProvider>
   );
