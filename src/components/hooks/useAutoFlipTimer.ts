@@ -3,7 +3,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 
 /**
  * Controls a countdown timer for auto-flipping flashcards.
- * Returns [secondsLeft, triggerFlip, resetTimer]
+ * Returns [secondsLeft, resetTimer]
  */
 export function useAutoFlipTimer({
   enabled,
@@ -19,44 +19,41 @@ export function useAutoFlipTimer({
   const [secondsLeft, setSecondsLeft] = useState(duration);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // When timer should start/restart
-  useEffect(() => {
-    if (!enabled) {
-      setSecondsLeft(duration);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
+  // Helper: Clears any interval
+  const clearTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+  };
 
+  // Start timer logic (shared by effect and reset)
+  const startTimer = useCallback(() => {
+    clearTimer();
     setSecondsLeft(duration);
-    let tick = 0;
-    intervalRef.current = setInterval(() => {
-      tick += 1;
-      setSecondsLeft(duration - tick);
-      if (tick >= duration) {
-        onElapsed();
-      }
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-    // eslint-disable-next-line
-  }, [enabled, duration, onElapsed, ...resetDeps]);
-
-  // Manual reset (e.g. when card changes)
-  const resetTimer = useCallback(() => {
-    setSecondsLeft(duration);
-    if (intervalRef.current) clearInterval(intervalRef.current);
     if (!enabled) return;
     let tick = 0;
     intervalRef.current = setInterval(() => {
       tick += 1;
       setSecondsLeft(duration - tick);
       if (tick >= duration) {
+        clearTimer();
         onElapsed();
       }
     }, 1000);
   }, [duration, enabled, onElapsed]);
+
+  // Effect: Start timer when dependencies change
+  useEffect(() => {
+    startTimer();
+    return clearTimer;
+    // eslint-disable-next-line
+  }, [startTimer, ...resetDeps]);
+
+  // Manual reset (for navigation)
+  const resetTimer = useCallback(() => {
+    startTimer();
+  }, [startTimer]);
 
   return [secondsLeft, resetTimer];
 }
