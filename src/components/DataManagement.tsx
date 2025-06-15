@@ -4,36 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Download, Upload } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useGamification } from "@/contexts/GamificationContext";
 
-// Storage keys
-const NOTIF_LS_KEY = "studymate-notification-prefs";
-const DISPLAY_LS_KEY = "studymate-display-prefs";
-const QUIZZES_LS_KEY = "studymate-quizzes";
-const FLASHCARDS_LS_KEY = "studymate-flashcards";
-
+// Export all localStorage items starting with studymate-
 function exportData() {
-  const notif = localStorage.getItem(NOTIF_LS_KEY);
-  const display = localStorage.getItem(DISPLAY_LS_KEY);
-  const quizzes = localStorage.getItem(QUIZZES_LS_KEY);
-  const flashcards = localStorage.getItem(FLASHCARDS_LS_KEY);
-
-  const data = {
-    notificationPrefs: notif ? JSON.parse(notif) : {},
-    displayPrefs: display ? JSON.parse(display) : {},
-    quizzes: quizzes ? JSON.parse(quizzes) : [],
-    flashcards: flashcards ? JSON.parse(flashcards) : [],
-    // Add other relevant data as needed
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const exportObj: Record<string, any> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith("studymate-")) {
+      try {
+        const value = localStorage.getItem(key);
+        exportObj[key] = value === null ? null : JSON.parse(value);
+      } catch {
+        // fallback as string if not JSON
+        exportObj[key] = localStorage.getItem(key);
+      }
+    }
+  }
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+  const date = new Date().toISOString().slice(0, 10);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "studymate-pro-backup.json";
+  a.download = `studymate-full-backup-${date}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// Import: restore everything to localStorage
 function importData() {
   const input = document.createElement("input");
   input.type = "file";
@@ -45,11 +42,17 @@ function importData() {
     reader.onload = (ev: any) => {
       try {
         const data = JSON.parse(ev.target.result);
-        if (data.notificationPrefs) localStorage.setItem(NOTIF_LS_KEY, JSON.stringify(data.notificationPrefs));
-        if (data.displayPrefs) localStorage.setItem(DISPLAY_LS_KEY, JSON.stringify(data.displayPrefs));
-        if (Array.isArray(data.quizzes)) localStorage.setItem(QUIZZES_LS_KEY, JSON.stringify(data.quizzes));
-        if (Array.isArray(data.flashcards)) localStorage.setItem(FLASHCARDS_LS_KEY, JSON.stringify(data.flashcards));
-        // add more as needed
+        if (typeof data !== "object" || Array.isArray(data) || !data) {
+          alert("Invalid backup format.");
+          return;
+        }
+        // Clear current studymate- data?
+        // Optionally, we could clear keys, but it's safer to overwrite only those present in file.
+        Object.entries(data).forEach(([key, value]) => {
+          if (key.startsWith("studymate-")) {
+            localStorage.setItem(key, JSON.stringify(value));
+          }
+        });
         window.location.reload(); // reload to apply imported settings
       } catch (err) {
         alert("Failed to import data. Make sure you selected a valid backup .json file.");
@@ -67,18 +70,20 @@ const DataManagement: React.FC = () => {
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">Data Management</CardTitle>
         <p className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-          Backup and restore your data<br />
-          <span className="font-semibold">Note: Quizzes and flashcards are included in export/import!</span>
+          Backup and restore <span className="font-semibold">all</span> your StudyMate Pro data.<br />
+          <span className="font-semibold">
+            <span className="underline">All settings, quizzes, flashcards, XP, decks, and preferences are included!</span>
+          </span>
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
         <Button onClick={exportData} variant="outline" className="w-full">
           <Download className="mr-2" size={16} />
-          Export Data (including Quizzes & Flashcards)
+          Export <span className="font-bold">ALL DATA</span>
         </Button>
         <Button onClick={importData} variant="outline" className="w-full">
           <Upload className="mr-2" size={16} />
-          Import Data (including Quizzes & Flashcards)
+          Import <span className="font-bold">ALL DATA</span>
         </Button>
       </CardContent>
     </Card>
