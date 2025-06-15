@@ -75,7 +75,7 @@ const AppContent = () => {
           isDarkMode 
             ? 'bg-gradient-to-r from-gray-800 to-gray-700 border-b border-gray-600' 
             : `bg-gradient-to-r ${colors.headerGradient}`
-        } text-white p-4 rounded-b-3xl shadow-lg relative`}>
+        } text-white px-4 py-4 rounded-b-3xl shadow-lg relative`}>
           <motion.h1 
             className="text-2xl font-bold text-center"
             initial={{ opacity: 0, y: -20 }}
@@ -86,7 +86,8 @@ const AppContent = () => {
           </motion.h1>
           <p className="text-center text-white/80 mt-1">Enhanced Study Companion</p>
           
-          <div className="absolute top-4 right-4 flex space-x-2">
+          {/* Header icon buttons: use flex, gap, and right-side absolute alignment, responsive fixes */}
+          <div className="absolute top-4 right-4 flex flex-row items-center gap-2 z-20">
             <Button
               onClick={toggleDarkMode}
               variant="ghost"

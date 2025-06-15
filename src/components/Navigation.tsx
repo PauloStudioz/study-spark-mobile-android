@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -111,7 +112,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
               }}
               variant="ghost"
               size="sm"
-              className={`flex flex-col items-center justify-center p-2 min-w-0 relative h-14 transition-all duration-200
+              className={`flex flex-col items-center justify-center p-2 min-w-0 relative h-14 transition-all duration-200 flex-1
                 ${isActive
                   ? isDarkMode
                     ? 'text-blue-400 bg-blue-900/30'
@@ -122,6 +123,7 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
                 }
                 ${isSpecial ? "font-semibold" : ""}
               `}
+              style={{ minWidth: 0, flex: "1 1 0%" }}
             >
               {isActive && !isSpecial && (
                 <motion.div
@@ -142,3 +144,4 @@ const Navigation = ({ activeTab, setActiveTab }: NavigationProps) => {
 };
 
 export default Navigation;
+
