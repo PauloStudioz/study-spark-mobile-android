@@ -6,17 +6,24 @@ import { Download, Upload } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useGamification } from "@/contexts/GamificationContext";
 
+// Storage keys
 const NOTIF_LS_KEY = "studymate-notification-prefs";
 const DISPLAY_LS_KEY = "studymate-display-prefs";
+const QUIZZES_LS_KEY = "studymate-quizzes";
+const FLASHCARDS_LS_KEY = "studymate-flashcards";
 
 function exportData() {
   const notif = localStorage.getItem(NOTIF_LS_KEY);
   const display = localStorage.getItem(DISPLAY_LS_KEY);
-  // Add other relevant data as needed
+  const quizzes = localStorage.getItem(QUIZZES_LS_KEY);
+  const flashcards = localStorage.getItem(FLASHCARDS_LS_KEY);
+
   const data = {
     notificationPrefs: notif ? JSON.parse(notif) : {},
     displayPrefs: display ? JSON.parse(display) : {},
-    // add more as needed
+    quizzes: quizzes ? JSON.parse(quizzes) : [],
+    flashcards: flashcards ? JSON.parse(flashcards) : [],
+    // Add other relevant data as needed
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -40,10 +47,12 @@ function importData() {
         const data = JSON.parse(ev.target.result);
         if (data.notificationPrefs) localStorage.setItem(NOTIF_LS_KEY, JSON.stringify(data.notificationPrefs));
         if (data.displayPrefs) localStorage.setItem(DISPLAY_LS_KEY, JSON.stringify(data.displayPrefs));
+        if (Array.isArray(data.quizzes)) localStorage.setItem(QUIZZES_LS_KEY, JSON.stringify(data.quizzes));
+        if (Array.isArray(data.flashcards)) localStorage.setItem(FLASHCARDS_LS_KEY, JSON.stringify(data.flashcards));
         // add more as needed
         window.location.reload(); // reload to apply imported settings
       } catch (err) {
-        alert("Failed to import data.");
+        alert("Failed to import data. Make sure you selected a valid backup .json file.");
       }
     };
     reader.readAsText(file);
@@ -58,17 +67,18 @@ const DataManagement: React.FC = () => {
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">Data Management</CardTitle>
         <p className={`text-sm ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-          Backup and restore your data
+          Backup and restore your data<br />
+          <span className="font-semibold">Note: Quizzes and flashcards are included in export/import!</span>
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
         <Button onClick={exportData} variant="outline" className="w-full">
           <Download className="mr-2" size={16} />
-          Export Data
+          Export Data (including Quizzes & Flashcards)
         </Button>
         <Button onClick={importData} variant="outline" className="w-full">
           <Upload className="mr-2" size={16} />
-          Import Data
+          Import Data (including Quizzes & Flashcards)
         </Button>
       </CardContent>
     </Card>
