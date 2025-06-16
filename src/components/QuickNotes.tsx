@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { StickyNote, Plus, Search, Tag, X, Edit3, Trash2 } from 'lucide-react';
+import { StickyNote, Plus, Search, Tag, X, Edit3, Trash2, BookOpen, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -26,6 +27,7 @@ const QuickNotes = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [expandedNote, setExpandedNote] = useState<string | null>(null);
   const [newNote, setNewNote] = useState({
     title: '',
     content: '',
@@ -65,7 +67,7 @@ const QuickNotes = () => {
       updatedAt: new Date()
     };
 
-    saveNotes([...notes, note]);
+    saveNotes([note, ...notes]);
     setNewNote({ title: '', content: '', subject: '', tags: '' });
     setShowAddNote(false);
   };
@@ -89,10 +91,14 @@ const QuickNotes = () => {
     saveNotes(updatedNotes);
     setEditingNote(null);
     setNewNote({ title: '', content: '', subject: '', tags: '' });
+    setShowAddNote(false);
   };
 
   const deleteNote = (id: string) => {
     saveNotes(notes.filter(note => note.id !== id));
+    if (expandedNote === id) {
+      setExpandedNote(null);
+    }
   };
 
   const startEdit = (note: Note) => {
@@ -106,6 +112,12 @@ const QuickNotes = () => {
     setShowAddNote(true);
   };
 
+  const deleteAllSubjectNotes = (subject: string) => {
+    if (window.confirm(`Are you sure you want to delete all ${subject} notes?`)) {
+      saveNotes(notes.filter(note => note.subject !== subject));
+    }
+  };
+
   const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,6 +125,13 @@ const QuickNotes = () => {
     const matchesSubject = !selectedSubject || note.subject === selectedSubject;
     return matchesSearch && matchesSubject;
   });
+
+  const getSubjectNoteCounts = () => {
+    return subjects.map(subject => ({
+      subject,
+      count: notes.filter(note => note.subject === subject).length
+    }));
+  };
 
   return (
     <div className="space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
@@ -124,11 +143,11 @@ const QuickNotes = () => {
         <Card className={`bg-gradient-to-br ${colors.cardGradient} border-0 shadow-lg`}>
           <CardHeader className="text-center pb-4">
             <CardTitle className={`flex items-center justify-center text-2xl text-${colors.textColor}`}>
-              <StickyNote className="mr-2" size={24} />
-              Quick Notes
+              <BookOpen className="mr-2" size={24} />
+              Study Notes
             </CardTitle>
             <p className={`text-${colors.textColor} mt-2 opacity-80`}>
-              Capture your thoughts instantly
+              Organize your notes by subject
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -144,9 +163,10 @@ const QuickNotes = () => {
               </div>
               <Button
                 onClick={() => setShowAddNote(true)}
-                className={`bg-gradient-to-r ${colors.headerGradient} hover:opacity-90 rounded-xl`}
+                className={`bg-gradient-to-r ${colors.headerGradient} hover:opacity-90 rounded-xl px-6`}
               >
-                <Plus size={16} />
+                <Plus size={16} className="mr-2" />
+                Add Note
               </Button>
             </div>
 
@@ -157,18 +177,30 @@ const QuickNotes = () => {
                 size="sm"
                 className="rounded-full"
               >
-                All
+                All ({notes.length})
               </Button>
-              {subjects.map(subject => (
-                <Button
-                  key={subject}
-                  onClick={() => setSelectedSubject(subject)}
-                  variant={selectedSubject === subject ? 'default' : 'outline'}
-                  size="sm"
-                  className="rounded-full"
-                >
-                  {subject}
-                </Button>
+              {getSubjectNoteCounts().map(({ subject, count }) => (
+                <div key={subject} className="flex items-center">
+                  <Button
+                    onClick={() => setSelectedSubject(subject)}
+                    variant={selectedSubject === subject ? 'default' : 'outline'}
+                    size="sm"
+                    className="rounded-full"
+                  >
+                    {subject} ({count})
+                  </Button>
+                  {count > 0 && selectedSubject === subject && (
+                    <Button
+                      onClick={() => deleteAllSubjectNotes(subject)}
+                      variant="ghost"
+                      size="sm"
+                      className="ml-1 text-red-500 hover:text-red-700 p-1"
+                      title={`Delete all ${subject} notes`}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
+                </div>
               ))}
             </div>
           </CardContent>
@@ -181,11 +213,13 @@ const QuickNotes = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
           >
-            <Card className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">
-                  {editingNote ? 'Edit Note' : 'Add New Note'}
+            <Card className="shadow-lg border-2 border-blue-200">
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  <Edit3 className="mr-2" size={20} />
+                  {editingNote ? 'Edit Note' : 'Create New Note'}
                 </CardTitle>
                 <Button
                   onClick={() => {
@@ -195,6 +229,7 @@ const QuickNotes = () => {
                   }}
                   variant="ghost"
                   size="sm"
+                  className="hover:bg-red-50 hover:text-red-600"
                 >
                   <X size={16} />
                 </Button>
@@ -204,19 +239,19 @@ const QuickNotes = () => {
                   value={newNote.title}
                   onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
                   placeholder="Note title..."
-                  className="rounded-xl"
+                  className="rounded-xl text-lg font-semibold"
                 />
-                <textarea
+                <Textarea
                   value={newNote.content}
                   onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
                   placeholder="Write your note here..."
-                  className="w-full h-32 p-3 border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="min-h-[120px] rounded-xl resize-none focus:ring-2 focus:ring-blue-500"
                 />
                 <div className="flex space-x-2">
                   <select
                     value={newNote.subject}
                     onChange={(e) => setNewNote({ ...newNote, subject: e.target.value })}
-                    className="flex-1 p-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Subject</option>
                     {subjects.map(subject => (
@@ -232,9 +267,10 @@ const QuickNotes = () => {
                 </div>
                 <Button
                   onClick={editingNote ? updateNote : addNote}
-                  className={`w-full bg-gradient-to-r ${colors.headerGradient} hover:opacity-90 rounded-xl`}
+                  className={`w-full bg-gradient-to-r ${colors.headerGradient} hover:opacity-90 rounded-xl py-3 text-lg font-semibold`}
+                  disabled={!newNote.title.trim() || !newNote.content.trim()}
                 >
-                  {editingNote ? 'Update Note' : 'Add Note'}
+                  {editingNote ? 'Update Note' : 'Save Note'}
                 </Button>
               </CardContent>
             </Card>
@@ -243,68 +279,113 @@ const QuickNotes = () => {
       </AnimatePresence>
 
       <div className="grid gap-4">
-        {filteredNotes.map((note, index) => (
-          <motion.div
-            key={note.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card className="shadow-lg hover:shadow-xl transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-800">{note.title}</h3>
-                  <div className="flex space-x-1">
-                    <Button
-                      onClick={() => startEdit(note)}
-                      variant="ghost"
-                      size="sm"
-                      className="p-1"
-                    >
-                      <Edit3 size={14} />
-                    </Button>
-                    <Button
-                      onClick={() => deleteNote(note.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="p-1 text-red-500"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
+        <AnimatePresence>
+          {filteredNotes.map((note, index) => (
+            <motion.div
+              key={note.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -300 }}
+              transition={{ delay: index * 0.05, duration: 0.3 }}
+              layout
+            >
+              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
+                <CardContent className="p-0">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-bold text-lg text-gray-800 cursor-pointer hover:text-blue-600"
+                          onClick={() => setExpandedNote(expandedNote === note.id ? null : note.id)}>
+                        {note.title}
+                      </h3>
+                      <div className="flex space-x-1">
+                        <Button
+                          onClick={() => startEdit(note)}
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 hover:bg-blue-50 hover:text-blue-600"
+                          title="Edit note"
+                        >
+                          <Edit3 size={14} />
+                        </Button>
+                        <Button
+                          onClick={() => deleteNote(note.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 hover:bg-red-50 hover:text-red-600"
+                          title="Delete note"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <AnimatePresence>
+                      {expandedNote === note.id ? (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="bg-gray-50 p-4 rounded-lg mb-3">
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                              {note.content}
+                            </p>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2 cursor-pointer"
+                           onClick={() => setExpandedNote(note.id)}>
+                          {note.content}
+                        </p>
+                      )}
+                    </AnimatePresence>
+                    
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="default" className="text-xs bg-blue-100 text-blue-800">
+                          {note.subject}
+                        </Badge>
+                        {note.tags.map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            <Tag size={8} className="mr-1" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="flex items-center text-xs text-gray-400">
+                        <Calendar size={12} className="mr-1" />
+                        {note.updatedAt.toLocaleDateString()}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                <p className="text-gray-600 text-sm mb-3 line-clamp-3">{note.content}</p>
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {note.subject}
-                    </Badge>
-                    {note.tags.map(tag => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        <Tag size={10} className="mr-1" />
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    {note.updatedAt.toLocaleDateString()}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       {filteredNotes.length === 0 && (
-        <div className="text-center py-12">
-          <StickyNote size={48} className="mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">
-            {searchTerm || selectedSubject ? 'No notes found' : 'Start taking notes!'}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-16"
+        >
+          <StickyNote size={64} className="mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500 text-lg">
+            {searchTerm || selectedSubject ? 'No notes found matching your criteria' : 'Start taking notes to organize your learning!'}
           </p>
-        </div>
+          {!showAddNote && (
+            <Button
+              onClick={() => setShowAddNote(true)}
+              className={`mt-4 bg-gradient-to-r ${colors.headerGradient} hover:opacity-90`}
+            >
+              <Plus size={16} className="mr-2" />
+              Create Your First Note
+            </Button>
+          )}
+        </motion.div>
       )}
     </div>
   );
