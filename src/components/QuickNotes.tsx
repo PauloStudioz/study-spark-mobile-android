@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { StickyNote, Plus, Search, Tag, X, Edit3, Trash2, BookOpen, Calendar } from 'lucide-react';
+import { StickyNote, Plus, Search, Tag, X, Edit3, Trash2, BookOpen, Calendar, Settings, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +27,10 @@ const QuickNotes = () => {
   const [showAddNote, setShowAddNote] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [expandedNote, setExpandedNote] = useState<string | null>(null);
+  const [subjects, setSubjects] = useState(['Math', 'Science', 'History', 'Language', 'Art', 'Other']);
+  const [showSubjectManager, setShowSubjectManager] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<string | null>(null);
+  const [newSubjectName, setNewSubjectName] = useState('');
   const [newNote, setNewNote] = useState({
     title: '',
     content: '',
@@ -35,10 +38,10 @@ const QuickNotes = () => {
     tags: ''
   });
 
-  const subjects = ['Math', 'Science', 'History', 'Language', 'Art', 'Other'];
-
   useEffect(() => {
     const savedNotes = localStorage.getItem('studymate-notes');
+    const savedSubjects = localStorage.getItem('studymate-subjects');
+    
     if (savedNotes) {
       const parsedNotes = JSON.parse(savedNotes).map((note: any) => ({
         ...note,
@@ -47,11 +50,73 @@ const QuickNotes = () => {
       }));
       setNotes(parsedNotes);
     }
+    
+    if (savedSubjects) {
+      setSubjects(JSON.parse(savedSubjects));
+    }
   }, []);
 
   const saveNotes = (updatedNotes: Note[]) => {
     setNotes(updatedNotes);
     localStorage.setItem('studymate-notes', JSON.stringify(updatedNotes));
+  };
+
+  const saveSubjects = (updatedSubjects: string[]) => {
+    setSubjects(updatedSubjects);
+    localStorage.setItem('studymate-subjects', JSON.stringify(updatedSubjects));
+  };
+
+  const addSubject = () => {
+    if (!newSubjectName.trim() || subjects.includes(newSubjectName.trim())) return;
+    
+    const updatedSubjects = [...subjects, newSubjectName.trim()];
+    saveSubjects(updatedSubjects);
+    setNewSubjectName('');
+  };
+
+  const editSubject = (oldName: string, newName: string) => {
+    if (!newName.trim() || subjects.includes(newName.trim()) || oldName === newName.trim()) {
+      setEditingSubject(null);
+      setNewSubjectName('');
+      return;
+    }
+
+    // Update subject name in subjects array
+    const updatedSubjects = subjects.map(subject => 
+      subject === oldName ? newName.trim() : subject
+    );
+    saveSubjects(updatedSubjects);
+
+    // Update all notes that use this subject
+    const updatedNotes = notes.map(note => 
+      note.subject === oldName ? { ...note, subject: newName.trim() } : note
+    );
+    saveNotes(updatedNotes);
+
+    // Update selected subject if it was the one being edited
+    if (selectedSubject === oldName) {
+      setSelectedSubject(newName.trim());
+    }
+
+    setEditingSubject(null);
+    setNewSubjectName('');
+  };
+
+  const deleteSubject = (subjectToDelete: string) => {
+    if (window.confirm(`Are you sure you want to delete the "${subjectToDelete}" subject? All notes in this subject will also be deleted.`)) {
+      // Remove subject from subjects array
+      const updatedSubjects = subjects.filter(subject => subject !== subjectToDelete);
+      saveSubjects(updatedSubjects);
+
+      // Remove all notes with this subject
+      const updatedNotes = notes.filter(note => note.subject !== subjectToDelete);
+      saveNotes(updatedNotes);
+
+      // Clear selected subject if it was deleted
+      if (selectedSubject === subjectToDelete) {
+        setSelectedSubject('');
+      }
+    }
   };
 
   const addNote = () => {
@@ -145,6 +210,15 @@ const QuickNotes = () => {
             <CardTitle className={`flex items-center justify-center text-2xl text-${colors.textColor}`}>
               <BookOpen className="mr-2" size={24} />
               Study Notes
+              <Button
+                onClick={() => setShowSubjectManager(!showSubjectManager)}
+                variant="ghost"
+                size="sm"
+                className="ml-2 hover:bg-white/20"
+                title="Manage subjects"
+              >
+                <Settings size={16} />
+              </Button>
             </CardTitle>
             <p className={`text-${colors.textColor} mt-2 opacity-80`}>
               Organize your notes by subject
@@ -169,6 +243,96 @@ const QuickNotes = () => {
                 Add Note
               </Button>
             </div>
+
+            <AnimatePresence>
+              {showSubjectManager && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white/20 p-4 rounded-xl space-y-3"
+                >
+                  <h3 className={`font-semibold text-${colors.textColor}`}>Manage Subjects</h3>
+                  <div className="flex space-x-2">
+                    <Input
+                      value={newSubjectName}
+                      onChange={(e) => setNewSubjectName(e.target.value)}
+                      placeholder="New subject name..."
+                      className="flex-1 rounded-xl"
+                      onKeyPress={(e) => e.key === 'Enter' && addSubject()}
+                    />
+                    <Button
+                      onClick={addSubject}
+                      disabled={!newSubjectName.trim() || subjects.includes(newSubjectName.trim())}
+                      className="bg-green-500 hover:bg-green-600 rounded-xl"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {subjects.map(subject => (
+                      <div key={subject} className="flex items-center justify-between bg-white/10 p-2 rounded-lg">
+                        {editingSubject === subject ? (
+                          <div className="flex items-center space-x-2 flex-1">
+                            <Input
+                              value={newSubjectName}
+                              onChange={(e) => setNewSubjectName(e.target.value)}
+                              className="flex-1 rounded-lg"
+                              onKeyPress={(e) => e.key === 'Enter' && editSubject(subject, newSubjectName)}
+                              autoFocus
+                            />
+                            <Button
+                              onClick={() => editSubject(subject, newSubjectName)}
+                              size="sm"
+                              className="bg-green-500 hover:bg-green-600 p-2"
+                            >
+                              <Check size={14} />
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setEditingSubject(null);
+                                setNewSubjectName('');
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="p-2"
+                            >
+                              <X size={14} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className={`text-${colors.textColor} font-medium`}>{subject}</span>
+                            <div className="flex space-x-1">
+                              <Button
+                                onClick={() => {
+                                  setEditingSubject(subject);
+                                  setNewSubjectName(subject);
+                                }}
+                                size="sm"
+                                variant="ghost"
+                                className="p-2 hover:bg-blue-50 hover:text-blue-600"
+                              >
+                                <Edit3 size={14} />
+                              </Button>
+                              <Button
+                                onClick={() => deleteSubject(subject)}
+                                size="sm"
+                                variant="ghost"
+                                className="p-2 hover:bg-red-50 hover:text-red-600"
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="flex flex-wrap gap-2">
               <Button
