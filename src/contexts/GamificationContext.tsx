@@ -130,9 +130,9 @@ export const GamificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const reviewFlashcard = (difficulty: 'easy' | 'medium' | 'hard') => {
     let points = 5;
-    if (difficulty === 'easy') points = 10;
-    else if (difficulty === 'medium') points = 7;
-    else if (difficulty === 'hard') points = 3;
+    if (difficulty === 'easy') points = 15;
+    else if (difficulty === 'medium') points = 10;
+    else if (difficulty === 'hard') points = 5;
 
     let newStats = {
       ...userStats,
