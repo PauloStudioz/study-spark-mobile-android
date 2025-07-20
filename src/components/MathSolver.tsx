@@ -66,23 +66,62 @@ const MathSolver = () => {
     setExpression(prev => prev + symbol);
   };
 
-  const quickButtons = [
-    { label: 'π', value: 'pi' },
-    { label: 'e', value: 'e' },
-    { label: '√', value: 'sqrt(' },
+  const handleButtonPress = (button: any) => {
+    if (button.value === 'clear') {
+      clearAll();
+    } else if (button.value === 'equals') {
+      solveExpression();
+    } else if (button.value === 'negate') {
+      setExpression(prev => {
+        if (prev.startsWith('-')) {
+          return prev.substring(1);
+        } else {
+          return '-' + prev;
+        }
+      });
+    } else {
+      insertSymbol(button.value);
+    }
+  };
+
+  // Calculator layout - numbers and operators
+  const numberButtons = [
+    { label: 'C', value: 'clear', type: 'action' },
+    { label: '±', value: 'negate', type: 'action' },
+    { label: '%', value: '%', type: 'operator' },
+    { label: '÷', value: '÷', type: 'operator' },
+    { label: '7', value: '7', type: 'number' },
+    { label: '8', value: '8', type: 'number' },
+    { label: '9', value: '9', type: 'number' },
+    { label: '×', value: '×', type: 'operator' },
+    { label: '4', value: '4', type: 'number' },
+    { label: '5', value: '5', type: 'number' },
+    { label: '6', value: '6', type: 'number' },
+    { label: '-', value: '-', type: 'operator' },
+    { label: '1', value: '1', type: 'number' },
+    { label: '2', value: '2', type: 'number' },
+    { label: '3', value: '3', type: 'number' },
+    { label: '+', value: '+', type: 'operator' },
+    { label: '0', value: '0', type: 'number' },
+    { label: '.', value: '.', type: 'number' },
+    { label: '=', value: 'equals', type: 'equals' },
+  ];
+
+  const scientificButtons = [
     { label: 'sin', value: 'sin(' },
     { label: 'cos', value: 'cos(' },
     { label: 'tan', value: 'tan(' },
-    { label: 'log', value: 'log(' },
     { label: 'ln', value: 'log(' },
+    { label: 'log', value: 'log10(' },
+    { label: 'π', value: 'pi' },
+    { label: 'e', value: 'e' },
     { label: '^', value: '^' },
+    { label: '√', value: 'sqrt(' },
+    { label: 'x²', value: '^2' },
+    { label: '!', value: '!' },
     { label: '(', value: '(' },
     { label: ')', value: ')' },
     { label: 'abs', value: 'abs(' },
-    { label: '×', value: '×' },
-    { label: '÷', value: '÷' },
-    { label: '%', value: '%' },
-    { label: '!', value: '!' },
   ];
 
   return (
@@ -92,76 +131,76 @@ const MathSolver = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-0 shadow-lg">
+        <Card className="bg-card border shadow-lg">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="flex items-center justify-center text-2xl text-purple-700">
+            <CardTitle className="flex items-center justify-center text-2xl text-foreground">
               <Calculator className="mr-2" size={24} />
-              Advanced Math Solver
+              Scientific Calculator
             </CardTitle>
-            <p className="text-purple-600 mt-2">Supports +, -, ×, ÷, %, !, ^, and more</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
+            {/* Display */}
+            <div className="bg-background border rounded-lg p-4 space-y-2">
               <Input
                 value={expression}
                 onChange={(e) => setExpression(e.target.value)}
-                placeholder="Enter mathematical expression... (e.g., 2×3+5÷2)"
-                className="text-lg h-12 rounded-xl border-2 focus:border-purple-400"
+                placeholder="0"
+                className="text-right text-2xl h-16 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus-visible:ring-0 shadow-none"
                 onKeyPress={(e) => e.key === 'Enter' && solveExpression()}
               />
               
-              {error && (
-                <motion.p 
-                  className="text-red-500 text-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  {error}
-                </motion.p>
-              )}
-
               {result && !error && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-green-50 p-4 rounded-xl border-2 border-green-200"
-                >
-                  <div className="flex items-center justify-center">
-                    <Equal className="text-green-600 mr-2" size={20} />
-                    <span className="text-2xl font-bold text-green-800">{result}</span>
-                  </div>
-                </motion.div>
+                <div className="text-right text-xl text-muted-foreground">
+                  = {result}
+                </div>
+              )}
+              
+              {error && (
+                <div className="text-right text-sm text-destructive">
+                  {error}
+                </div>
               )}
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
-              {quickButtons.map((button) => (
+            {/* Scientific Functions */}
+            <div className="grid grid-cols-7 gap-2">
+              {scientificButtons.map((button) => (
                 <Button
                   key={button.label}
-                  onClick={() => insertSymbol(button.value)}
+                  onClick={() => handleButtonPress(button)}
                   variant="outline"
                   size="sm"
-                  className="h-10 text-sm rounded-lg hover:bg-purple-100"
+                  className="h-10 text-sm"
                 >
                   {button.label}
                 </Button>
               ))}
             </div>
 
-            <div className="flex space-x-3">
-              <Button
-                onClick={solveExpression}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 h-12 rounded-xl text-lg"
-              >
-                Solve
-              </Button>
-              <Button
-                onClick={clearAll}
-                variant="outline"
-                className="px-6 h-12 rounded-xl"
-              >
-                <Trash2 size={20} />
-              </Button>
+            {/* Main Calculator Grid */}
+            <div className="grid grid-cols-4 gap-3">
+              {numberButtons.map((button) => (
+                <Button
+                  key={button.label}
+                  onClick={() => handleButtonPress(button)}
+                  variant={
+                    button.type === 'equals' ? 'default' :
+                    button.type === 'operator' ? 'secondary' :
+                    button.type === 'action' ? 'outline' :
+                    'ghost'
+                  }
+                  size="lg"
+                  className={`h-14 text-lg font-semibold ${
+                    button.label === '0' ? 'col-span-2' : ''
+                  } ${
+                    button.type === 'equals' ? 'bg-primary text-primary-foreground hover:bg-primary/90' :
+                    button.type === 'operator' ? 'bg-secondary text-secondary-foreground hover:bg-secondary/80' :
+                    'hover:bg-accent'
+                  }`}
+                >
+                  {button.label}
+                </Button>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -180,7 +219,7 @@ const MathSolver = () => {
                 onClick={clearHistory}
                 variant="ghost"
                 size="sm"
-                className="text-gray-500"
+                className="text-muted-foreground"
               >
                 Clear
               </Button>
@@ -192,11 +231,11 @@ const MathSolver = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-gray-50 p-3 rounded-lg cursor-pointer hover:bg-gray-100"
+                  className="bg-muted p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors"
                   onClick={() => setExpression(item.expression)}
                 >
-                  <div className="text-sm text-gray-600">{item.expression}</div>
-                  <div className="text-lg font-semibold text-purple-700">= {item.result}</div>
+                  <div className="text-sm text-muted-foreground">{item.expression}</div>
+                  <div className="text-lg font-semibold text-foreground">= {item.result}</div>
                 </motion.div>
               ))}
             </CardContent>

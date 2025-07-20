@@ -17,7 +17,7 @@ export const generateQuizFromText = async (text: string, title: string, apiKey: 
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Create a 50-question multiple choice quiz based on this text. Return ONLY a valid JSON object with this exact structure (no markdown, no code blocks, just the JSON):
+            text: `Create a 20-question multiple choice quiz based on this text. Return ONLY a valid JSON object with this exact structure (no markdown, no code blocks, just the JSON):
 {
   "questions": [
     {
@@ -36,7 +36,7 @@ Text to analyze: ${text}`
           temperature: 0.5,
           topK: 50,
           topP: 0.95,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 8000,
         },
         safetySettings: [
           {
